@@ -12,6 +12,8 @@ def create_app():
     login_manager.init_app(app)
     migrate.init_app(app, db)
 
+    from app import models
+
     @app.route("/")
     def home():
         return "<h1>Hello, UMKM!</h1>"
