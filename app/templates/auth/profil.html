@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Saya - Siwaruk{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+
+        <div class="mb-4">
+            <h3 class="fw-bold mb-1"><i class="bi bi-person-badge-fill text-primary me-2"></i>Profil Saya</h3>
+            <p class="text-muted small">Kelola informasi profil pengguna dan keamanan kata sandi akun Anda.</p>
+        </div>
+
+        <!-- Section 1: Informasi Akun -->
+        <div class="card card-custom border-0 shadow-sm p-4 p-md-5 mb-4">
+            <div class="d-flex align-items-center gap-3 mb-4 border-bottom pb-3">
+                <div class="p-3 rounded-circle text-white shadow-sm" style="background-color: var(--primary-color);">
+                    <i class="bi bi-person-vcard fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Informasi Akun</h5>
+                    <small class="text-muted">Data diri dan kontak pengguna</small>
+                </div>
+            </div>
+
+            <form action="{{ url_for('auth.profil') }}" method="POST">
+                <input type="hidden" name="action" value="update_profile">
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small text-secondary">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" value="{{ current_user.username }}" readonly disabled>
+                    </div>
+                    <div class="form-text small text-muted">Username tidak dapat diubah setelah dibuat.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="full_name" class="form-label fw-semibold small text-secondary">Nama Lengkap <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-card text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="full_name" name="full_name" value="{{ current_user.full_name }}" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="phone" class="form-label fw-semibold small text-secondary">Nomor WhatsApp</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-whatsapp text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="phone" name="phone" value="{{ current_user.phone or '' }}" placeholder="Contoh: 081234567890">
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary-custom rounded-3 px-4 py-2 fw-semibold">
+                        <i class="bi bi-check-circle me-1"></i> Simpan Perubahan Profil
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section 2: Keamanan Akun (Ganti Password) -->
+        <div class="card card-custom border-0 shadow-sm p-4 p-md-5 mb-4">
+            <div class="d-flex align-items-center gap-3 mb-4 border-bottom pb-3">
+                <div class="p-3 rounded-circle text-white shadow-sm" style="background-color: var(--primary-color);">
+                    <i class="bi bi-shield-lock fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0">Keamanan Akun</h5>
+                    <small class="text-muted">Perbarui kata sandi untuk keamanan akun Anda</small>
+                </div>
+            </div>
+
+            <form action="{{ url_for('auth.profil') }}" method="POST">
+                <input type="hidden" name="action" value="change_password">
+
+                <div class="mb-3">
+                    <label for="old_password" class="form-label fw-semibold small text-secondary">Password Lama <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 bg-light" id="old_password" name="old_password" placeholder="Masukkan password lama Anda" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="new_password" class="form-label fw-semibold small text-secondary">Password Baru <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 bg-light" id="new_password" name="new_password" placeholder="Minimal 8 karakter" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="confirm_password" class="form-label fw-semibold small text-secondary">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-check2-circle text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 bg-light" id="confirm_password" name="confirm_password" placeholder="Ulangi password baru Anda" required>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-warning text-dark fw-bold rounded-3 px-4 py-2">
+                        <i class="bi bi-key-fill me-1"></i> Ubah Password
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

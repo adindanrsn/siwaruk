@@ -82,3 +82,32 @@ def generate_secure_password(length: int = 12) -> str:
             any(c in lowercase for c in password) and
             any(c in digits for c in password)):
             return password
+
+
+def get_active_business():
+    """
+    Get the currently active Business object for the logged-in owner from Flask session.
+    Automatically initializes active_business_id if not set or invalid.
+    """
+    from flask import session
+    from flask_login import current_user
+    from app.models.business import Business
+
+    if not current_user or not current_user.is_authenticated or current_user.role != 'owner':
+        return None
+
+    active_id = session.get('active_business_id')
+    if active_id:
+        biz = Business.query.filter_by(id=active_id, owner_id=current_user.id).first()
+        if biz:
+            return biz
+
+    # Fallback to first business owned by the user
+    first_biz = current_user.businesses.first()
+    if first_biz:
+        session['active_business_id'] = first_biz.id
+        return first_biz
+
+    session['active_business_id'] = None
+    return None
+

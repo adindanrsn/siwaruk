@@ -9,7 +9,7 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """
-    Login route for users. Redirects authenticated users to the dashboard.
+    Login route for users. Redirects authenticated users to Beranda.
     """
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.index'))
@@ -29,13 +29,12 @@ def login():
             login_user(user, remember=remember)
             flash(f'Selamat datang kembali, {user.full_name}!', 'success')
 
-            # If user must change password, redirect directly to change-password
+            # If user must change password, redirect directly to Profil Saya
             if user.must_change_password:
                 flash('Anda diwajibkan untuk mengganti password terlebih dahulu.', 'warning')
-                return redirect(url_for('auth.change_password'))
+                return redirect(url_for('auth.profil'))
 
             next_page = request.args.get('next')
-            # Validate next parameter to prevent open redirect vulnerabilities
             if next_page and next_page.startswith('/'):
                 return redirect(next_page)
             return redirect(url_for('dashboard.index'))
@@ -56,42 +55,64 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
+@auth_bp.route('/profil', methods=['GET', 'POST'])
+@login_required
+def profil():
+    """
+    Profil Saya route combining Account Information and Account Security (Password Change).
+    """
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'update_profile':
+            full_name = request.form.get('full_name', '').strip()
+            phone = request.form.get('phone', '').strip()
+
+            if not full_name:
+                flash('Nama Lengkap tidak boleh kosong.', 'danger')
+                return render_template('auth/profil.html')
+
+            current_user.full_name = full_name
+            current_user.phone = phone or None
+            db.session.commit()
+            flash('Informasi akun berhasil diperbarui!', 'success')
+            return redirect(url_for('auth.profil'))
+
+        elif action == 'change_password':
+            old_password = request.form.get('old_password', '').strip()
+            new_password = request.form.get('new_password', '').strip()
+            confirm_password = request.form.get('confirm_password', '').strip()
+
+            if not old_password or not new_password or not confirm_password:
+                flash('Semua kolom password harus diisi.', 'danger')
+                return render_template('auth/profil.html')
+
+            if not current_user.check_password(old_password):
+                flash('Password lama tidak sesuai. Silakan coba lagi.', 'danger')
+                return render_template('auth/profil.html')
+
+            if len(new_password) < 8:
+                flash('Password baru minimal harus 8 karakter.', 'danger')
+                return render_template('auth/profil.html')
+
+            if new_password != confirm_password:
+                flash('Konfirmasi password baru tidak cocok.', 'danger')
+                return render_template('auth/profil.html')
+
+            current_user.set_password(new_password)
+            current_user.must_change_password = False
+            db.session.commit()
+
+            flash('Password Anda berhasil diperbarui!', 'success')
+            return redirect(url_for('auth.profil'))
+
+    return render_template('auth/profil.html')
+
+
 @auth_bp.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
     """
-    Change password route for authenticated users.
+    Legacy route redirecting to Profil Saya.
     """
-    if request.method == 'POST':
-        old_password = request.form.get('old_password', '').strip()
-        new_password = request.form.get('new_password', '').strip()
-        confirm_password = request.form.get('confirm_password', '').strip()
-
-        if not old_password or not new_password or not confirm_password:
-            flash('Semua kolom password harus diisi.', 'danger')
-            return render_template('auth/change_password.html')
-
-        # 1. Validate old password
-        if not current_user.check_password(old_password):
-            flash('Password lama tidak sesuai. Silakan coba lagi.', 'danger')
-            return render_template('auth/change_password.html')
-
-        # 2. Validate new password length (min 8 characters)
-        if len(new_password) < 8:
-            flash('Password baru minimal harus 8 karakter.', 'danger')
-            return render_template('auth/change_password.html')
-
-        # 3. Validate password confirmation match
-        if new_password != confirm_password:
-            flash('Konfirmasi password baru tidak cocok.', 'danger')
-            return render_template('auth/change_password.html')
-
-        # Update user password and set must_change_password to False
-        current_user.set_password(new_password)
-        current_user.must_change_password = False
-        db.session.commit()
-
-        flash('Password Anda berhasil diperbarui!', 'success')
-        return redirect(url_for('dashboard.index'))
-
-    return render_template('auth/change_password.html')
+    return redirect(url_for('auth.profil'))

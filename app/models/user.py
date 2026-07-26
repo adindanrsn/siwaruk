@@ -21,6 +21,8 @@ class User(UserMixin, BaseModel):
         default=True
     )
 
+    phone = db.Column(db.String(20), nullable=True)
+
     # Relationships
     # One Owner can have many Businesses (one-to-many)
     businesses = db.relationship(
@@ -29,6 +31,15 @@ class User(UserMixin, BaseModel):
         cascade='all, delete-orphan',
         lazy='dynamic'
     )
+
+    @property
+    def role_label(self):
+        """
+        Human-readable role label for UI display.
+        """
+        if self.role == 'admin':
+            return 'Admin'
+        return 'Pemilik Usaha'
 
     # Password Hashing Methods
     def set_password(self, password):

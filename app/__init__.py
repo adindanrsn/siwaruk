@@ -28,22 +28,28 @@ def create_app():
     def load_user(user_id):
         return User.query.get(int(user_id))
 
+    from app.utils import get_whatsapp_link, get_active_business
+
     # Context Processors
     @app.context_processor
-    def inject_whatsapp_links():
+    def inject_global_vars():
+        active_biz = get_active_business()
+        user_bizs = current_user.businesses.all() if current_user.is_authenticated and current_user.role == 'owner' else []
         return {
             'wa_register_link': get_whatsapp_link('register'),
             'wa_forgot_password_link': get_whatsapp_link('forgot_password'),
+            'active_business': active_biz,
+            'user_businesses': user_bizs,
         }
 
     # Before Request Guard: Enforce password change if must_change_password is True
     @app.before_request
     def force_password_change_guard():
         if current_user.is_authenticated and getattr(current_user, 'must_change_password', False):
-            allowed_endpoints = ['auth.change_password', 'auth.logout', 'static']
+            allowed_endpoints = ['auth.profil', 'auth.change_password', 'auth.logout', 'static']
             if request.endpoint and request.endpoint not in allowed_endpoints:
                 flash('Anda harus mengganti password terlebih dahulu sebelum dapat mengakses halaman lain.', 'warning')
-                return redirect(url_for('auth.change_password'))
+                return redirect(url_for('auth.profil'))
 
     # Register Blueprints
     from app.routes import auth_bp, dashboard_bp, admin_bp, usaha_bp
@@ -56,7 +62,7 @@ def create_app():
     def home():
         if current_user.is_authenticated:
             if current_user.must_change_password:
-                return redirect(url_for("auth.change_password"))
+                return redirect(url_for("auth.profil"))
             return redirect(url_for("dashboard.index"))
         return redirect(url_for("auth.login"))
 

@@ -1,9 +1,42 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.business import Business
+from app.utils import get_active_business
 
 usaha_bp = Blueprint('usaha', __name__, url_prefix='/usaha')
+
+
+@usaha_bp.route('/set-active/<int:business_id>', methods=['GET', 'POST'])
+@login_required
+def set_active(business_id):
+    """
+    Set the active business in session for the current owner.
+    """
+    if current_user.role != 'owner':
+        flash('Akses ditolak.', 'danger')
+        return redirect(url_for('dashboard.index'))
+
+    biz = Business.query.filter_by(id=business_id, owner_id=current_user.id).first_or_404()
+    session['active_business_id'] = biz.id
+    flash(f'Usaha aktif diubah ke "{biz.business_name}".', 'info')
+
+    next_url = request.referrer or url_for('dashboard.index')
+    return redirect(next_url)
+
+
+@usaha_bp.route('/kelola', methods=['GET'])
+@login_required
+def kelola():
+    """
+    Kelola Usaha main page for managing the currently active business.
+    """
+    if current_user.role == 'admin':
+        flash('Halaman ini khusus untuk Pemilik Usaha.', 'warning')
+        return redirect(url_for('dashboard.index'))
+
+    active_biz = get_active_business()
+    return render_template('usaha/kelola.html', active_business=active_biz)
 
 
 @usaha_bp.route('/tambah', methods=['GET', 'POST'])
@@ -11,7 +44,7 @@ usaha_bp = Blueprint('usaha', __name__, url_prefix='/usaha')
 def tambah_usaha():
     """
     Route for owners to create a new Business profile.
-    Admin accounts are not permitted to create businesses.
+    Automatically sets the newly created business as active in session.
     """
     if current_user.role == 'admin':
         flash('Admin tidak dapat memiliki usaha.', 'danger')
@@ -37,6 +70,9 @@ def tambah_usaha():
             )
             db.session.add(new_business)
             db.session.commit()
+
+            # Set newly created business as active in session
+            session['active_business_id'] = new_business.id
 
             flash(f'Usaha "{business_name}" berhasil ditambahkan!', 'success')
             return redirect(url_for('dashboard.index'))
