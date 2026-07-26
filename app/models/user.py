@@ -15,6 +15,11 @@ class User(UserMixin, BaseModel):
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='owner')  # admin or owner
+    must_change_password = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
 
     # Relationships
     # One User owns one Business

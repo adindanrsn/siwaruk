@@ -1,5 +1,9 @@
+import re
+import secrets
+import string
 from urllib.parse import quote
 from flask import current_app
+from app.models.user import User
 
 REGISTER_MESSAGE = (
     "Halo Admin Siwaruk,\n\n"
@@ -37,3 +41,44 @@ def get_whatsapp_link(message_type: str) -> str:
 
     encoded_text = quote(message_text)
     return f"https://wa.me/{wa_number}?text={encoded_text}"
+
+
+def generate_unique_username(business_name: str) -> str:
+    """
+    Generate a clean, unique username derived from the business name.
+    Example: 'Warung Berkah' -> 'warungberkah'.
+    Appends incremental numbers if username exists ('warungberkah2', etc.).
+    """
+    base_username = re.sub(r'[^a-zA-Z0-9]', '', business_name.lower())
+    if not base_username:
+        base_username = "user"
+
+    candidate = base_username
+    counter = 2
+    while User.query.filter_by(username=candidate).first() is not None:
+        candidate = f"{base_username}{counter}"
+        counter += 1
+
+    return candidate
+
+
+def generate_secure_password(length: int = 12) -> str:
+    """
+    Generate a random password using secrets module.
+    Guarantees at least 1 uppercase letter, 1 lowercase letter, and 1 digit.
+    Minimum length: 10.
+    """
+    if length < 10:
+        length = 10
+
+    uppercase = string.ascii_uppercase
+    lowercase = string.ascii_lowercase
+    digits = string.digits
+    alphabet = uppercase + lowercase + digits
+
+    while True:
+        password = ''.join(secrets.choice(alphabet) for _ in range(length))
+        if (any(c in uppercase for c in password) and
+            any(c in lowercase for c in password) and
+            any(c in digits for c in password)):
+            return password

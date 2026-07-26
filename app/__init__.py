@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, request, flash
 from flask_login import current_user
 
 from config import Config
@@ -36,14 +36,26 @@ def create_app():
             'wa_forgot_password_link': get_whatsapp_link('forgot_password'),
         }
 
+    # Before Request Guard: Enforce password change if must_change_password is True
+    @app.before_request
+    def force_password_change_guard():
+        if current_user.is_authenticated and getattr(current_user, 'must_change_password', False):
+            allowed_endpoints = ['auth.change_password', 'auth.logout', 'static']
+            if request.endpoint and request.endpoint not in allowed_endpoints:
+                flash('Anda harus mengganti password terlebih dahulu sebelum dapat mengakses halaman lain.', 'warning')
+                return redirect(url_for('auth.change_password'))
+
     # Register Blueprints
-    from app.routes import auth_bp, dashboard_bp
+    from app.routes import auth_bp, dashboard_bp, admin_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(admin_bp)
 
     @app.route("/")
     def home():
         if current_user.is_authenticated:
+            if current_user.must_change_password:
+                return redirect(url_for("auth.change_password"))
             return redirect(url_for("dashboard.index"))
         return redirect(url_for("auth.login"))
 

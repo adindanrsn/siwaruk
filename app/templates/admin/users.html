@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+
+{% block title %}Manajemen Akun - Siwaruk{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h3 class="fw-bold mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Manajemen Akun</h3>
+        <p class="text-muted small mb-0">Kelola pengguna sistem, profil usaha, dan reset kata sandi akun.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        <button type="button" class="btn btn-primary-custom rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+            <i class="bi bi-person-plus-fill me-1"></i> Tambah Akun Baru
+        </button>
+    </div>
+</div>
+
+<div class="card card-custom border-0 shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" class="ps-4">#</th>
+                    <th scope="col">Nama Usaha / Username</th>
+                    <th scope="col">Nama Pemilik</th>
+                    <th scope="col">No. WhatsApp</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Status Password</th>
+                    <th scope="col" class="text-end pe-4">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="ps-4 fw-semibold text-muted">{{ loop.index }}</td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ u.business.business_name if u.business else '-' }}</div>
+                        <small class="text-muted"><i class="bi bi-person me-1"></i>{{ u.username }}</small>
+                    </td>
+                    <td>{{ u.full_name }}</td>
+                    <td>{{ u.business.phone if (u.business and u.business.phone) else '-' }}</td>
+                    <td>
+                        {% if u.role == 'admin' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">Admin</span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Owner</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.must_change_password %}
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-1">
+                                <i class="bi bi-exclamation-circle me-1"></i> Wajib Ganti Password
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-3 py-1">
+                                <i class="bi bi-check-circle me-1"></i> Aktif
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end pe-4">
+                        {% if u.role != 'admin' %}
+                            <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#confirmResetModal{{ u.id }}">
+                                <i class="bi bi-key-fill me-1"></i> Reset Password
+                            </button>
+                        {% else %}
+                            <span class="text-muted small italic" title="Password Admin tidak dapat direset dari halaman ini">
+                                <i class="bi bi-shield-lock me-1"></i> Utamanya
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                {% if u.role != 'admin' %}
+                <!-- Modal Konfirmasi Reset Password untuk User {{ u.id }} -->
+                <div class="modal fade" id="confirmResetModal{{ u.id }}" tabindex="-1" aria-labelledby="confirmResetModalLabel{{ u.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow">
+                            <div class="modal-header border-bottom-0 pb-0">
+                                <h5 class="modal-title fw-bold" id="confirmResetModalLabel{{ u.id }}">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Konfirmasi Reset Password
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body py-3">
+                                <p class="mb-2 fs-6 text-dark">Apakah Anda yakin ingin mereset password akun ini?</p>
+                                <div class="bg-light p-3 rounded-3 border">
+                                    <div class="small text-muted mb-1">Target Akun Pengguna:</div>
+                                    <div class="fw-bold text-dark">{{ u.full_name }}</div>
+                                    <small class="text-muted"><i class="bi bi-person me-1"></i>Username: <strong>{{ u.username }}</strong></small>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    <i class="bi bi-info-circle me-1"></i> Sistem akan secara otomatis mengacak password sementara baru dan mengharuskan pengguna mengganti kata sandi saat login berikutnya.
+                                </small>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                                <form action="{{ url_for('admin.reset_password', user_id=u.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-warning rounded-3 fw-bold">
+                                        <i class="bi bi-key-fill me-1"></i> Reset Password
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Belum ada akun terdaftar.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Tambah Akun Baru -->
+<div class="modal fade" id="createAccountModal" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="createAccountModalLabel">
+                    <i class="bi bi-person-plus-fill text-primary me-2"></i>Tambah Akun UMKM Baru
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('admin.create_user') }}" method="POST">
+                <div class="modal-body py-3">
+                    <div class="mb-3">
+                        <label for="business_name" class="form-label fw-semibold small text-secondary">Nama Usaha</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-shop text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0 bg-light" id="business_name" name="business_name" placeholder="Contoh: Warung Berkah" required>
+                        </div>
+                        <div class="form-text small text-muted">Username akan otomatis dibuat dari Nama Usaha.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="owner_name" class="form-label fw-semibold small text-secondary">Nama Pemilik</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-card text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0 bg-light" id="owner_name" name="owner_name" placeholder="Contoh: Budi Santoso" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label fw-semibold small text-secondary">Nomor WhatsApp</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-whatsapp text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0 bg-light" id="phone" name="phone" placeholder="Contoh: 081234567890" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label fw-semibold small text-secondary">Role / Peran</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield text-muted"></i></span>
+                            <select class="form-select border-start-0 bg-light" id="role" name="role" required>
+                                <option value="owner" selected>Owner (Pemilik UMKM)</option>
+                                <option value="admin">Admin (Pengelola Sistem)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold">
+                        <i class="bi bi-check-circle me-1"></i> Buat Akun & Usaha
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Kredensial Pembuatan Akun Baru -->
+{% if new_account %}
+<div class="modal fade" id="newAccountSuccessModal" tabindex="-1" aria-labelledby="newAccountSuccessModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-success text-white rounded-top-4">
+                <h5 class="modal-title fw-bold" id="newAccountSuccessModalLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i>Kredensial Akun Berhasil Dibuat
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    Harap simpan dan berikan kredensial berikut kepada <strong>{{ new_account.owner_name }}</strong> ({{ new_account.business_name }}):
+                </p>
+                <div class="bg-light p-3 rounded-3 border mb-3">
+                    <div class="mb-3">
+                        <small class="text-muted d-block fw-semibold mb-1">Username:</small>
+                        <div class="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border">
+                            <span class="fw-bold text-dark font-monospace" id="newAccUsername">{{ new_account.username }}</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-2" onclick="copyById('newAccUsername', 'Username')">
+                                <i class="bi bi-clipboard me-1"></i> Copy Username
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block fw-semibold mb-1">Password Sementara:</small>
+                        <div class="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border">
+                            <span class="fw-bold text-primary font-monospace" id="newAccPassword">{{ new_account.temp_password }}</span>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-2" onclick="copyById('newAccPassword', 'Password sementara')">
+                                <i class="bi bi-clipboard me-1"></i> Copy Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai & Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Hasil Reset Password (Tampil Sekali) -->
+{% if reset_info %}
+<div class="modal fade" id="resetSuccessModal" tabindex="-1" aria-labelledby="resetSuccessModalLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-warning text-dark rounded-top-4">
+                <h5 class="modal-title fw-bold" id="resetSuccessModalLabel">
+                    <i class="bi bi-key-fill me-2"></i>Password Berhasil Direset
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3">
+                    Password untuk akun <strong>{{ reset_info.full_name }}</strong> telah berhasil direset. Silakan berikan kredensial berikut kepada pengguna:
+                </p>
+                <div class="bg-light p-3 rounded-3 border mb-3">
+                    <div class="mb-3">
+                        <small class="text-muted d-block fw-semibold mb-1">Username:</small>
+                        <div class="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border">
+                            <span class="fw-bold text-dark font-monospace" id="resetUsernameVal">{{ reset_info.username }}</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-2" onclick="copyById('resetUsernameVal', 'Username')">
+                                <i class="bi bi-clipboard me-1"></i> Copy Username
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <small class="text-muted d-block fw-semibold mb-1">Password Sementara:</small>
+                        <div class="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border">
+                            <span class="fw-bold text-primary font-monospace" id="resetPasswordVal">{{ reset_info.temp_password }}</span>
+                            <button type="button" class="btn btn-outline-primary btn-sm rounded-2" onclick="copyById('resetPasswordVal', 'Password sementara')">
+                                <i class="bi bi-clipboard me-1"></i> Copy Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                    <div>Password sementara ini <strong>hanya ditampilkan sekali ini saja</strong> dan tidak dapat dilihat kembali setelah modal ditutup.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai & Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if new_account %}
+        var newAccModal = new bootstrap.Modal(document.getElementById('newAccountSuccessModal'));
+        newAccModal.show();
+        {% endif %}
+
+        {% if reset_info %}
+        var resetModal = new bootstrap.Modal(document.getElementById('resetSuccessModal'));
+        resetModal.show();
+        {% endif %}
+    });
+
+    function copyById(elementId, label) {
+        var text = document.getElementById(elementId).innerText.trim();
+        navigator.clipboard.writeText(text).then(function() {
+            alert(label + " berhasil disalin ke clipboard!");
+        }, function(err) {
+            console.error('Gagal menyalin: ', err);
+        });
+    }
+</script>
+{% endblock %}
