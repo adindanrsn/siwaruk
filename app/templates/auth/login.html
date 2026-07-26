@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Siwaruk Pencatatan Keuangan UMKM{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center my-4">
+    <div class="col-11 col-sm-8 col-md-6 col-lg-4">
+        <div class="card card-custom p-4 p-sm-5 shadow">
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-emerald-100 text-success rounded-circle mb-3 p-3" style="width: 70px; height: 70px; background-color: #ecfdf5;">
+                    <i class="bi bi-shield-lock-fill fs-1" style="color:#2F74B5;"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-1">Masuk ke Siwaruk</h3>
+                <p class="text-muted small">Sistem Pencatatan Keuangan UMKM Desa Beruk</p>
+            </div>
+
+            <form action="{{ url_for('auth.login', next=request.args.get('next')) }}" method="POST" novalidate>
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold text-secondary small">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 bg-light" id="username" name="username" placeholder="Masukkan username" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="password" class="form-label fw-semibold text-secondary small">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 bg-light" id="password" name="password" placeholder="Masukkan password" required>
+                    </div>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="remember" name="remember">
+                    <label class="form-check-label text-muted small" for="remember">
+                        Ingat Saya
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary-custom w-100 py-2 rounded-3 text-uppercase tracking-wider fw-bold">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Masuk
+                </button>
+            </form>
+
+            <div class="text-center mt-4 pt-3 border-top">
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Pendaftaran akun dilakukan oleh Administrator.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
