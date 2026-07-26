@@ -3,6 +3,7 @@ from flask_login import current_user
 
 from config import Config
 from app.extensions import db, login_manager, migrate
+from app.utils import get_whatsapp_link
 
 
 def create_app():
@@ -26,6 +27,14 @@ def create_app():
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
+
+    # Context Processors
+    @app.context_processor
+    def inject_whatsapp_links():
+        return {
+            'wa_register_link': get_whatsapp_link('register'),
+            'wa_forgot_password_link': get_whatsapp_link('forgot_password'),
+        }
 
     # Register Blueprints
     from app.routes import auth_bp, dashboard_bp
