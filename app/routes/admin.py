@@ -3,7 +3,6 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.user import User
-from app.models.business import Business
 from app.utils import generate_unique_username, generate_secure_password
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
@@ -27,7 +26,7 @@ def admin_required(f):
 @admin_required
 def users_list():
     """
-    Display list of all registered system users, new account modals, or reset password results.
+    Display list of all registered system users and modals for new account or reset password.
     """
     users = User.query.order_by(User.created_at.desc()).all()
     new_account = session.pop('new_account_created', None)
@@ -40,52 +39,45 @@ def users_list():
 @admin_required
 def create_user():
     """
-    Create a new user account & business profile atomically (Admin only).
+    Create a new Owner account (Admin only).
+    No Business record is created here — owners create their own businesses after login.
+    Username is generated automatically from the owner's full name.
     """
-    business_name = request.form.get('business_name', '').strip()
-    owner_name = request.form.get('owner_name', '').strip()
+    full_name = request.form.get('full_name', '').strip()
     phone = request.form.get('phone', '').strip()
     role = request.form.get('role', 'owner').strip()
 
-    if not business_name or not owner_name or not phone:
-        flash('Nama Usaha, Nama Pemilik, dan Nomor WhatsApp wajib diisi.', 'danger')
+    if not full_name or not phone:
+        flash('Nama Lengkap dan Nomor WhatsApp wajib diisi.', 'danger')
         return redirect(url_for('admin.users_list'))
 
-    # Generate unique username and secure temporary password using secrets
-    username = generate_unique_username(business_name)
+    # Admin accounts must remain purely administrative
+    if role not in ['owner']:
+        role = 'owner'
+
+    # Generate unique username from full name and a secure temporary password
+    username = generate_unique_username(full_name)
     temp_password = generate_secure_password(12)
 
     try:
-        # Single atomic database transaction
         new_user = User(
             username=username,
-            full_name=owner_name,
-            role=role if role in ['admin', 'owner'] else 'owner',
+            full_name=full_name,
+            role=role,
             must_change_password=True
         )
         new_user.set_password(temp_password)
 
         db.session.add(new_user)
-        db.session.flush()  # Populates new_user.id for Business foreign key
-
-        new_business = Business(
-            user_id=new_user.id,
-            business_name=business_name,
-            owner_name=owner_name,
-            phone=phone
-        )
-        db.session.add(new_business)
         db.session.commit()
 
         # Save credentials temporarily in session for post-creation modal popup (shown only once)
         session['new_account_created'] = {
             'username': username,
             'temp_password': temp_password,
-            'business_name': business_name,
-            'owner_name': owner_name,
-            'phone': phone
+            'full_name': full_name,
         }
-        flash(f'Akun untuk "{business_name}" berhasil dibuat!', 'success')
+        flash(f'Akun Owner untuk "{full_name}" berhasil dibuat!', 'success')
 
     except Exception as e:
         db.session.rollback()

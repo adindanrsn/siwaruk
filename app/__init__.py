@@ -46,10 +46,11 @@ def create_app():
                 return redirect(url_for('auth.change_password'))
 
     # Register Blueprints
-    from app.routes import auth_bp, dashboard_bp, admin_bp
+    from app.routes import auth_bp, dashboard_bp, admin_bp, usaha_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(usaha_bp)
 
     @app.route("/")
     def home():

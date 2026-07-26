@@ -6,11 +6,11 @@
 <div class="row mb-4 align-items-center">
     <div class="col-md-6">
         <h3 class="fw-bold mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Manajemen Akun</h3>
-        <p class="text-muted small mb-0">Kelola pengguna sistem, profil usaha, dan reset kata sandi akun.</p>
+        <p class="text-muted small mb-0">Kelola akun Owner, atur ulang kata sandi, dan pantau status akun.</p>
     </div>
     <div class="col-md-6 text-md-end mt-3 mt-md-0">
         <button type="button" class="btn btn-primary-custom rounded-3 px-3 py-2" data-bs-toggle="modal" data-bs-target="#createAccountModal">
-            <i class="bi bi-person-plus-fill me-1"></i> Tambah Akun Baru
+            <i class="bi bi-person-plus-fill me-1"></i> Tambah Akun Owner
         </button>
     </div>
 </div>
@@ -21,10 +21,9 @@
             <thead class="table-light">
                 <tr>
                     <th scope="col" class="ps-4">#</th>
-                    <th scope="col">Nama Usaha / Username</th>
-                    <th scope="col">Nama Pemilik</th>
-                    <th scope="col">No. WhatsApp</th>
+                    <th scope="col">Nama Lengkap / Username</th>
                     <th scope="col">Role</th>
+                    <th scope="col">Jumlah Usaha</th>
                     <th scope="col">Status Password</th>
                     <th scope="col" class="text-end pe-4">Aksi</th>
                 </tr>
@@ -34,16 +33,30 @@
                 <tr>
                     <td class="ps-4 fw-semibold text-muted">{{ loop.index }}</td>
                     <td>
-                        <div class="fw-bold text-dark">{{ u.business.business_name if u.business else '-' }}</div>
+                        <div class="fw-bold text-dark">{{ u.full_name }}</div>
                         <small class="text-muted"><i class="bi bi-person me-1"></i>{{ u.username }}</small>
                     </td>
-                    <td>{{ u.full_name }}</td>
-                    <td>{{ u.business.phone if (u.business and u.business.phone) else '-' }}</td>
                     <td>
                         {% if u.role == 'admin' %}
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">Admin</span>
                         {% else %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Owner</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.role == 'admin' %}
+                            <span class="text-muted small">-</span>
+                        {% else %}
+                            {% set biz_count = u.businesses.count() %}
+                            {% if biz_count == 0 %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i> Belum ada usaha
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-3 py-1">
+                                    <i class="bi bi-shop me-1"></i> {{ biz_count }} Usaha
+                                </span>
+                            {% endif %}
                         {% endif %}
                     </td>
                     <td>
@@ -63,8 +76,8 @@
                                 <i class="bi bi-key-fill me-1"></i> Reset Password
                             </button>
                         {% else %}
-                            <span class="text-muted small italic" title="Password Admin tidak dapat direset dari halaman ini">
-                                <i class="bi bi-shield-lock me-1"></i> Utamanya
+                            <span class="text-muted small" title="Password Admin tidak dapat direset dari halaman ini">
+                                <i class="bi bi-shield-lock me-1"></i> Terlindungi
                             </span>
                         {% endif %}
                     </td>
@@ -107,7 +120,7 @@
 
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center py-4 text-muted">Belum ada akun terdaftar.</td>
+                    <td colspan="6" class="text-center py-4 text-muted">Belum ada akun terdaftar.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -115,32 +128,29 @@
     </div>
 </div>
 
-<!-- Modal Tambah Akun Baru -->
+<!-- Modal Tambah Akun Owner Baru -->
 <div class="modal fade" id="createAccountModal" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-bottom-0 pb-0">
                 <h5 class="modal-title fw-bold" id="createAccountModalLabel">
-                    <i class="bi bi-person-plus-fill text-primary me-2"></i>Tambah Akun UMKM Baru
+                    <i class="bi bi-person-plus-fill text-primary me-2"></i>Tambah Akun Owner Baru
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('admin.create_user') }}" method="POST">
                 <div class="modal-body py-3">
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Buat akun Owner terlebih dahulu. Owner dapat menambahkan data usaha setelah login.
+                    </p>
                     <div class="mb-3">
-                        <label for="business_name" class="form-label fw-semibold small text-secondary">Nama Usaha</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-shop text-muted"></i></span>
-                            <input type="text" class="form-control border-start-0 bg-light" id="business_name" name="business_name" placeholder="Contoh: Warung Berkah" required>
-                        </div>
-                        <div class="form-text small text-muted">Username akan otomatis dibuat dari Nama Usaha.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="owner_name" class="form-label fw-semibold small text-secondary">Nama Pemilik</label>
+                        <label for="full_name" class="form-label fw-semibold small text-secondary">Nama Lengkap</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-card text-muted"></i></span>
-                            <input type="text" class="form-control border-start-0 bg-light" id="owner_name" name="owner_name" placeholder="Contoh: Budi Santoso" required>
+                            <input type="text" class="form-control border-start-0 bg-light" id="full_name" name="full_name" placeholder="Contoh: Budi Santoso" required>
                         </div>
+                        <div class="form-text small text-muted">Username akan dibuat otomatis dari Nama Lengkap.</div>
                     </div>
                     <div class="mb-3">
                         <label for="phone" class="form-label fw-semibold small text-secondary">Nomor WhatsApp</label>
@@ -149,21 +159,12 @@
                             <input type="text" class="form-control border-start-0 bg-light" id="phone" name="phone" placeholder="Contoh: 081234567890" required>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label fw-semibold small text-secondary">Role / Peran</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-shield text-muted"></i></span>
-                            <select class="form-select border-start-0 bg-light" id="role" name="role" required>
-                                <option value="owner" selected>Owner (Pemilik UMKM)</option>
-                                <option value="admin">Admin (Pengelola Sistem)</option>
-                            </select>
-                        </div>
-                    </div>
+                    <input type="hidden" name="role" value="owner">
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
                     <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold">
-                        <i class="bi bi-check-circle me-1"></i> Buat Akun & Usaha
+                        <i class="bi bi-check-circle me-1"></i> Buat Akun Owner
                     </button>
                 </div>
             </form>
@@ -178,13 +179,13 @@
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header bg-success text-white rounded-top-4">
                 <h5 class="modal-title fw-bold" id="newAccountSuccessModalLabel">
-                    <i class="bi bi-check-circle-fill me-2"></i>Kredensial Akun Berhasil Dibuat
+                    <i class="bi bi-check-circle-fill me-2"></i>Akun Owner Berhasil Dibuat
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
                 <p class="text-muted small mb-3">
-                    Harap simpan dan berikan kredensial berikut kepada <strong>{{ new_account.owner_name }}</strong> ({{ new_account.business_name }}):
+                    Harap simpan dan berikan kredensial berikut kepada <strong>{{ new_account.full_name }}</strong>:
                 </p>
                 <div class="bg-light p-3 rounded-3 border mb-3">
                     <div class="mb-3">
@@ -206,9 +207,13 @@
                         </div>
                     </div>
                 </div>
+                <div class="alert alert-info py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+                    <div>Owner perlu login dan <strong>menambahkan data usaha</strong> secara mandiri melalui menu "Tambah Usaha".</div>
+                </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai & Tutup</button>
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai &amp; Tutup</button>
             </div>
         </div>
     </div>
@@ -256,7 +261,7 @@
                 </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai & Tutup</button>
+                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai &amp; Tutup</button>
             </div>
         </div>
     </div>

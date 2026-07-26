@@ -22,12 +22,12 @@ class User(UserMixin, BaseModel):
     )
 
     # Relationships
-    # One User owns one Business
-    business = db.relationship(
+    # One Owner can have many Businesses (one-to-many)
+    businesses = db.relationship(
         'Business',
-        back_populates='user',
-        uselist=False,
-        cascade='all, delete-orphan'
+        back_populates='owner',
+        cascade='all, delete-orphan',
+        lazy='dynamic'
     )
 
     # Password Hashing Methods

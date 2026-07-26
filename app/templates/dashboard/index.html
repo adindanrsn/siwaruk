@@ -24,29 +24,65 @@
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Business Profile Card -->
-    <div class="col-md-6 col-lg-4">
-        <div class="card card-custom h-100 p-4">
-            <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="bg-emerald-100 text-success p-3 rounded-3" style="background-color: #ecfdf5;">
-                    <i class="bi bi-building fs-3"></i>
-                </div>
-                <div>
-                    <h5 class="fw-bold mb-0">Profil Usaha</h5>
-                    <small class="text-muted">Data UMKM terdaftar</small>
+{% if current_user.role == 'owner' %}
+    {% set businesses = current_user.businesses.all() %}
+    {% if businesses|length == 0 %}
+    <!-- CTA: No businesses yet -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-custom border-0 shadow-sm p-4 text-center" style="border-left: 4px solid #2F74B5 !important;">
+                <div class="py-3">
+                    <div class="mb-3" style="font-size: 3rem;">🏪</div>
+                    <h4 class="fw-bold mb-2">Belum ada usaha terdaftar</h4>
+                    <p class="text-muted mb-4">
+                        Anda belum memiliki data usaha. Mulailah dengan menambahkan usaha pertama Anda
+                        untuk dapat mengakses fitur POS, pencatatan keuangan, dan laporan.
+                    </p>
+                    <a href="{{ url_for('usaha.tambah_usaha') }}" class="btn btn-primary-custom rounded-pill px-5 py-2 fw-semibold">
+                        <i class="bi bi-plus-circle me-2"></i> Tambah Usaha Pertama Saya
+                    </a>
                 </div>
             </div>
-            {% if current_user.business %}
-                <h6 class="fw-bold text-success mb-1">{{ current_user.business.business_name }}</h6>
-                <p class="text-muted small mb-2"><i class="bi bi-person me-1"></i> Pemilik: {{ current_user.business.owner_name }}</p>
-                <p class="text-muted small mb-0"><i class="bi bi-telephone me-1"></i> Telepon: {{ current_user.business.phone or '-' }}</p>
-            {% else %}
-                <p class="text-muted small mb-0">Belum ada data usaha yang terdaftar.</p>
-            {% endif %}
         </div>
     </div>
+    {% else %}
+    <!-- Business list for owners with one or more businesses -->
+    <div class="row mb-3 align-items-center">
+        <div class="col">
+            <h5 class="fw-bold mb-0"><i class="bi bi-shop me-2 text-primary"></i>Daftar Usaha Anda</h5>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('usaha.tambah_usaha') }}" class="btn btn-primary-custom btn-sm rounded-pill px-3">
+                <i class="bi bi-plus-circle me-1"></i> Tambah Usaha
+            </a>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        {% for biz in businesses %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card card-custom h-100 p-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="p-3 rounded-3" style="background-color: #ecfdf5;">
+                        <i class="bi bi-building fs-3 text-success"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">{{ biz.business_name }}</h5>
+                        <small class="text-muted">Usaha #{{ loop.index }}</small>
+                    </div>
+                </div>
+                <p class="text-muted small mb-1"><i class="bi bi-person me-1"></i> Pemilik: {{ biz.owner_name }}</p>
+                <p class="text-muted small mb-0"><i class="bi bi-telephone me-1"></i> Telepon: {{ biz.phone or '-' }}</p>
+                {% if biz.address %}
+                <p class="text-muted small mb-0 mt-1"><i class="bi bi-geo-alt me-1"></i> {{ biz.address }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+{% endif %}
 
+<div class="row g-4">
     <!-- POS Quick Action -->
     <div class="col-md-6 col-lg-4">
         <div class="card card-custom h-100 p-4">
@@ -56,7 +92,7 @@
                 </div>
                 <div>
                     <h5 class="fw-bold mb-0">Kasir / POS</h5>
-                    <small class="text-muted">Transaksi & Penjualan</small>
+                    <small class="text-muted">Transaksi &amp; Penjualan</small>
                 </div>
             </div>
             <p class="text-muted small">Kelola transaksi penjualan dan pencetakan struk usaha Anda secara langsung.</p>
@@ -72,7 +108,7 @@
                 </div>
                 <div>
                     <h5 class="fw-bold mb-0">Pencatatan Keuangan</h5>
-                    <small class="text-muted">Pengeluaran & Laporan</small>
+                    <small class="text-muted">Pengeluaran &amp; Laporan</small>
                 </div>
             </div>
             <p class="text-muted small">Catat arus kas pengeluaran dan tinjau laporan keuangan harian maupun bulanan.</p>

@@ -9,11 +9,10 @@ class Business(BaseModel):
     __tablename__ = 'businesses'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
+    owner_id = db.Column(
         db.Integer,
         db.ForeignKey('users.id', ondelete='CASCADE'),
-        nullable=False,
-        unique=True
+        nullable=False
     )
     business_name = db.Column(db.String(100), nullable=False)
     owner_name = db.Column(db.String(100), nullable=False)
@@ -21,7 +20,7 @@ class Business(BaseModel):
     address = db.Column(db.Text, nullable=True)
 
     # Relationships
-    user = db.relationship('User', back_populates='business')
+    owner = db.relationship('User', back_populates='businesses')
     categories = db.relationship(
         'Category',
         back_populates='business',

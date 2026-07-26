@@ -43,13 +43,13 @@ def get_whatsapp_link(message_type: str) -> str:
     return f"https://wa.me/{wa_number}?text={encoded_text}"
 
 
-def generate_unique_username(business_name: str) -> str:
+def generate_unique_username(full_name: str) -> str:
     """
-    Generate a clean, unique username derived from the business name.
-    Example: 'Warung Berkah' -> 'warungberkah'.
-    Appends incremental numbers if username exists ('warungberkah2', etc.).
+    Generate a clean, unique username derived from the owner's full name.
+    Example: 'Budi Santoso' -> 'budisantoso'.
+    Appends incremental numbers if username exists ('budisantoso2', etc.).
     """
-    base_username = re.sub(r'[^a-zA-Z0-9]', '', business_name.lower())
+    base_username = re.sub(r'[^a-zA-Z0-9]', '', full_name.lower())
     if not base_username:
         base_username = "user"
 

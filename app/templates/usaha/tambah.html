@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Usaha - Siwaruk{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+
+        <div class="mb-4">
+            <a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
+            </a>
+        </div>
+
+        <div class="card card-custom border-0 shadow-sm p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                     style="width: 64px; height: 64px; background-color: #ecfdf5;">
+                    <i class="bi bi-shop fs-2 text-success"></i>
+                </div>
+                <h4 class="fw-bold mb-1">Tambah Data Usaha</h4>
+                <p class="text-muted small mb-0">Lengkapi informasi usaha Anda di bawah ini.</p>
+            </div>
+
+            <form action="{{ url_for('usaha.tambah_usaha') }}" method="POST" novalidate>
+
+                <div class="mb-3">
+                    <label for="business_name" class="form-label fw-semibold small text-secondary">
+                        Nama Usaha <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-shop text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 bg-light"
+                               id="business_name" name="business_name"
+                               placeholder="Contoh: Warung Berkah" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="owner_name" class="form-label fw-semibold small text-secondary">
+                        Nama Pemilik Usaha <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-person-badge text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 bg-light"
+                               id="owner_name" name="owner_name"
+                               placeholder="Contoh: Budi Santoso" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="phone" class="form-label fw-semibold small text-secondary">
+                        Nomor Telepon / WhatsApp
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-whatsapp text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 bg-light"
+                               id="phone" name="phone"
+                               placeholder="Contoh: 081234567890">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="address" class="form-label fw-semibold small text-secondary">
+                        Alamat Usaha
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                            <i class="bi bi-geo-alt text-muted"></i>
+                        </span>
+                        <textarea class="form-control border-start-0 bg-light"
+                                  id="address" name="address"
+                                  rows="3"
+                                  placeholder="Contoh: Jl. Raya Desa Beruk No. 12, Kec. ..."></textarea>
+                    </div>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold py-2">
+                        <i class="bi bi-plus-circle me-2"></i> Simpan Data Usaha
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
