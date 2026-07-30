@@ -27,7 +27,7 @@ class Sale(BaseModel):
         default=datetime.utcnow
     )
     total = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
-    payment_method = db.Column(db.String(30), nullable=False, default='cash')
+    payment_method = db.Column(db.String(30), nullable=False, default='Tunai')
     notes = db.Column(db.Text, nullable=True)
 
     # Relationships
@@ -37,6 +37,14 @@ class Sale(BaseModel):
         back_populates='sale',
         cascade='all, delete-orphan'
     )
+
+    @property
+    def transaction_number(self):
+        return self.invoice_number
+
+    @transaction_number.setter
+    def transaction_number(self, val):
+        self.invoice_number = val
 
     def __repr__(self):
         return f'<Sale {self.invoice_number}>'

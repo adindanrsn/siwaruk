@@ -21,8 +21,8 @@ class Product(BaseModel):
     )
     name = db.Column(db.String(150), nullable=False)
     selling_price = db.Column(db.Numeric(12, 2), nullable=False, default=0.00)
-    stock = db.Column(db.Integer, nullable=False, default=0)
-    minimum_stock = db.Column(db.Integer, nullable=False, default=0)
+    stock = db.Column(db.Integer, nullable=True, default=None)
+    minimum_stock = db.Column(db.Integer, nullable=True, default=5)
     unit = db.Column(db.String(20), nullable=False, default='pcs')
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
@@ -30,6 +30,22 @@ class Product(BaseModel):
     business = db.relationship('Business', back_populates='products')
     category = db.relationship('Category', back_populates='products')
     sale_details = db.relationship('SaleDetail', back_populates='product')
+
+    @property
+    def product_name(self):
+        return self.name
+
+    @product_name.setter
+    def product_name(self, value):
+        self.name = value
+
+    @property
+    def price(self):
+        return self.selling_price
+
+    @price.setter
+    def price(self, value):
+        self.selling_price = value
 
     def __repr__(self):
         return f'<Product {self.name}>'

@@ -1,95 +1,341 @@
 {% extends "base.html" %}
 
-{% block title %}Tambah Usaha - Siwaruk{% endblock %}
+{% block title %}Tambah Usaha Baru - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tambah-page-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .tambah-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .tambah-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid var(--card-border);
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+    }
+
+    .tambah-back-btn:hover {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+        transform: translateX(-2px);
+    }
+
+    .tambah-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin: 0;
+    }
+
+    /* ─── Certification Chips ─── */
+    .cert-chips-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .cert-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1.1rem;
+        border-radius: 50rem;
+        border: 1.5px solid #CBD5E1;
+        background-color: #ffffff;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+    .cert-chip:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        box-shadow: 0 2px 8px rgba(47, 116, 181, 0.12);
+    }
+
+    .cert-chip.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(47, 116, 181, 0.3);
+    }
+
+    .cert-chip.active:hover {
+        background-color: var(--primary-dark, #245d94);
+        border-color: var(--primary-dark, #245d94);
+        color: #ffffff;
+    }
+
+    .cert-chip .cert-check-icon {
+        display: none;
+        font-size: 0.85rem;
+    }
+
+    .cert-chip.active .cert-check-icon {
+        display: inline;
+    }
+
+    /* ─── Certificate Number Fields ─── */
+    .cert-number-field {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.25s ease;
+        margin-bottom: 0;
+    }
+
+    .cert-number-field.visible {
+        max-height: 120px;
+        opacity: 1;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
+<div class="tambah-page-wrapper">
 
-        <div class="mb-4">
-            <a href="{{ url_for('dashboard.index') }}" class="text-decoration-none text-muted small">
-                <i class="bi bi-arrow-left me-1"></i> Kembali ke Dashboard
-            </a>
+    {# ── Header Bar ── #}
+    <div class="tambah-header">
+        <a href="{{ url_for('usaha.pengaturan') }}" class="tambah-back-btn" title="Kembali ke Pengaturan Usaha">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <h3 class="tambah-title">Tambah Usaha Baru</h3>
+    </div>
+
+    {# ── Form Card ── #}
+    <div class="card card-custom border-0 shadow-sm p-4 p-md-5">
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                 style="width: 64px; height: 64px; background-color: #ECFDF5;">
+                <i class="bi bi-shop fs-2 text-success"></i>
+            </div>
+            <h4 class="fw-bold mb-1">Tambah Data Usaha Baru</h4>
+            <p class="text-muted small mb-0">Lengkapi informasi profil usaha baru Anda di bawah ini.</p>
         </div>
 
-        <div class="card card-custom border-0 shadow-sm p-4 p-md-5">
-            <div class="text-center mb-4">
-                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
-                     style="width: 64px; height: 64px; background-color: #ecfdf5;">
-                    <i class="bi bi-shop fs-2 text-success"></i>
+        <form action="{{ url_for('usaha.tambah_usaha') }}" method="POST" novalidate id="formTambahUsaha">
+
+            <div class="mb-3">
+                <label for="business_name" class="form-label fw-semibold small text-secondary">
+                    Nama Usaha <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-shop text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 bg-light"
+                           id="business_name" name="business_name"
+                           value="{{ form_values.get('business_name', '') }}"
+                           placeholder="Contoh: Warung Berkah" required>
                 </div>
-                <h4 class="fw-bold mb-1">Tambah Data Usaha</h4>
-                <p class="text-muted small mb-0">Lengkapi informasi usaha Anda di bawah ini.</p>
             </div>
 
-            <form action="{{ url_for('usaha.tambah_usaha') }}" method="POST" novalidate>
+            <div class="mb-3">
+                <label for="owner_name" class="form-label fw-semibold small text-secondary">
+                    Nama Pemilik Usaha <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-person-badge text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 bg-light"
+                           id="owner_name" name="owner_name"
+                           value="{{ form_values.get('owner_name', current_user.full_name if current_user.is_authenticated else '') }}" required>
+                </div>
+            </div>
 
-                <div class="mb-3">
-                    <label for="business_name" class="form-label fw-semibold small text-secondary">
-                        Nama Usaha <span class="text-danger">*</span>
+            <div class="mb-3">
+                <label for="bidang_usaha" class="form-label fw-semibold small text-secondary">
+                    Bidang Usaha <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-tag text-muted"></i>
+                    </span>
+                    <select class="form-select border-start-0 bg-light"
+                            id="bidang_usaha" name="bidang_usaha" required>
+                        <option value="" disabled {% if not form_values.get('bidang_usaha') %}selected{% endif %}>-- Pilih Bidang Usaha --</option>
+                        {% for pilihan in bidang_usaha_choices %}
+                        <option value="{{ pilihan }}"
+                            {% if form_values.get('bidang_usaha') == pilihan %}selected{% endif %}>
+                            {{ pilihan }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label fw-semibold small text-secondary">
+                    Nomor Telepon / WhatsApp
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-whatsapp text-muted"></i>
+                    </span>
+                    <input type="text" class="form-control border-start-0 bg-light"
+                           id="phone" name="phone"
+                           value="{{ form_values.get('phone', '') }}"
+                           placeholder="Contoh: 081234567890">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="address" class="form-label fw-semibold small text-secondary">
+                    Alamat Usaha
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                        <i class="bi bi-geo-alt text-muted"></i>
+                    </span>
+                    <textarea class="form-control border-start-0 bg-light"
+                              id="address" name="address"
+                              rows="3"
+                              placeholder="Contoh: Jl. Raya Desa Beruk No. 12, Kec. ...">{{ form_values.get('address', '') }}</textarea>
+                </div>
+            </div>
+
+            {# ── Sertifikasi Toggle Chips ── #}
+            <div class="mb-4">
+                <label class="form-label fw-semibold small text-secondary">
+                    <i class="bi bi-patch-check me-1"></i> Sertifikasi yang Dipunyai
+                </label>
+                <p class="text-muted small mb-2" style="margin-top: -0.25rem;">Pilih sertifikasi yang dimiliki usaha Anda. Opsional.</p>
+
+                <div class="cert-chips-wrapper">
+                    {% for sert in sertifikasi_list %}
+                    <span class="cert-chip {% if form_values.get('has_' ~ sert.key) == '1' %}active{% endif %}"
+                          data-cert-key="{{ sert.key }}"
+                          id="chip-{{ sert.key }}">
+                        <i class="bi bi-check-lg cert-check-icon"></i>
+                        {{ sert.label }}
+                    </span>
+                    {% endfor %}
+                </div>
+
+                {# Hidden inputs + number fields for each certification #}
+                {% for sert in sertifikasi_list %}
+                <input type="hidden" name="has_{{ sert.key }}" id="has-{{ sert.key }}" value="{{ form_values.get('has_' ~ sert.key, '0') }}">
+
+                <div class="cert-number-field {% if form_values.get('has_' ~ sert.key) == '1' %}visible{% endif %}"
+                     id="field-{{ sert.key }}">
+                    <label for="num-{{ sert.key }}" class="form-label fw-semibold small text-secondary">
+                        Nomor Sertifikat {{ sert.label }}
                     </label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0">
-                            <i class="bi bi-shop text-muted"></i>
+                            <i class="bi bi-file-earmark-text text-muted"></i>
                         </span>
                         <input type="text" class="form-control border-start-0 bg-light"
-                               id="business_name" name="business_name"
-                               placeholder="Contoh: Warung Berkah" required>
+                               id="num-{{ sert.key }}" name="{{ sert.key }}_number"
+                               value="{{ form_values.get(sert.key ~ '_number', '') }}"
+                               placeholder="Masukkan nomor sertifikat {{ sert.label }}">
                     </div>
                 </div>
+                {% endfor %}
+            </div>
 
-                <div class="mb-3">
-                    <label for="owner_name" class="form-label fw-semibold small text-secondary">
-                        Nama Pemilik Usaha <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="bi bi-person-badge text-muted"></i>
-                        </span>
-                        <input type="text" class="form-control border-start-0 bg-light"
-                               id="owner_name" name="owner_name"
-                               placeholder="Contoh: Budi Santoso" required>
-                    </div>
-                </div>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold py-2">
+                    <i class="bi bi-plus-circle me-2"></i> Simpan Data Usaha
+                </button>
+            </div>
 
-                <div class="mb-3">
-                    <label for="phone" class="form-label fw-semibold small text-secondary">
-                        Nomor Telepon / WhatsApp
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="bi bi-whatsapp text-muted"></i>
-                        </span>
-                        <input type="text" class="form-control border-start-0 bg-light"
-                               id="phone" name="phone"
-                               placeholder="Contoh: 081234567890">
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label for="address" class="form-label fw-semibold small text-secondary">
-                        Alamat Usaha
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
-                            <i class="bi bi-geo-alt text-muted"></i>
-                        </span>
-                        <textarea class="form-control border-start-0 bg-light"
-                                  id="address" name="address"
-                                  rows="3"
-                                  placeholder="Contoh: Jl. Raya Desa Beruk No. 12, Kec. ..."></textarea>
-                    </div>
-                </div>
-
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold py-2">
-                        <i class="bi bi-plus-circle me-2"></i> Simpan Data Usaha
-                    </button>
-                </div>
-
-            </form>
-        </div>
-
+        </form>
     </div>
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    // Toggle chip selection
+    document.querySelectorAll('.cert-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var key = this.dataset.certKey;
+            var hiddenInput = document.getElementById('has-' + key);
+            var fieldWrapper = document.getElementById('field-' + key);
+            var numberInput = document.getElementById('num-' + key);
+            var isActive = this.classList.contains('active');
+
+            if (isActive) {
+                // Deselect
+                this.classList.remove('active');
+                hiddenInput.value = '0';
+                fieldWrapper.classList.remove('visible');
+                // Clear the number input so it doesn't get submitted
+                numberInput.value = '';
+            } else {
+                // Select
+                this.classList.add('active');
+                hiddenInput.value = '1';
+                fieldWrapper.classList.add('visible');
+                // Focus the number input after transition
+                setTimeout(function () {
+                    numberInput.focus();
+                }, 300);
+            }
+        });
+    });
+
+    // Client-side validation before submit
+    var form = document.getElementById('formTambahUsaha');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            var hasError = false;
+            document.querySelectorAll('.cert-chip.active').forEach(function (chip) {
+                var key = chip.dataset.certKey;
+                var numberInput = document.getElementById('num-' + key);
+                var label = chip.textContent.trim();
+
+                // Remove previous validation state
+                numberInput.classList.remove('is-invalid');
+
+                if (!numberInput.value.trim()) {
+                    hasError = true;
+                    numberInput.classList.add('is-invalid');
+
+                    // Add feedback message if not present
+                    if (!numberInput.parentNode.querySelector('.invalid-feedback')) {
+                        var feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = 'Nomor Sertifikat ' + label + ' wajib diisi.';
+                        numberInput.parentNode.appendChild(feedback);
+                    }
+                }
+            });
+
+            if (hasError) {
+                e.preventDefault();
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

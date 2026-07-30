@@ -1,0 +1,872 @@
+{% extends "base.html" %}
+
+{% block title %}Riwayat Transaksi - {{ active_business.business_name }} - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ══════════════════════════════════════
+       PAGE WRAPPER & HEADER
+    ══════════════════════════════════════ */
+    .riwayat-wrapper {
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .riwayat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .riwayat-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .riwayat-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .riwayat-back-btn:hover {
+        background: #2F74B5;
+        color: #ffffff;
+        border-color: #2F74B5;
+        transform: translateX(-2px);
+    }
+
+    /* ══════════════════════════════════════
+       CTA BUTTONS
+    ══════════════════════════════════════ */
+    .btn-cta-pemasukan {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #059669;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.15rem;
+        border-radius: 50rem;
+        border: none;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(5,150,105,0.25);
+        transition: all 0.18s ease;
+    }
+
+    .btn-cta-pemasukan:hover {
+        background: #047857;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(5,150,105,0.32);
+    }
+
+    .btn-cta-pengeluaran {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #DC2626;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.88rem;
+        padding: 0.55rem 1.15rem;
+        border-radius: 50rem;
+        border: none;
+        text-decoration: none;
+        box-shadow: 0 4px 12px rgba(220,38,38,0.25);
+        transition: all 0.18s ease;
+    }
+
+    .btn-cta-pengeluaran:hover {
+        background: #B91C1C;
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(220,38,38,0.32);
+    }
+
+    /* ══════════════════════════════════════
+       SUMMARY CARDS
+    ══════════════════════════════════════ */
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    @media (max-width: 640px) {
+        .summary-cards { grid-template-columns: 1fr; }
+    }
+
+    .summary-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 0.85rem;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .summary-card-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748B;
+        margin-bottom: 0.35rem;
+    }
+
+    .summary-card-value {
+        font-size: 1.3rem;
+        font-weight: 900;
+        color: #0F172A;
+    }
+
+    /* ══════════════════════════════════════
+       FILTER CARD
+    ══════════════════════════════════════ */
+    .filter-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 1rem;
+        padding: 1.1rem 1.25rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        margin-bottom: 1.25rem;
+    }
+
+    /* ══════════════════════════════════════
+       TABLE
+    ══════════════════════════════════════ */
+    .transaksi-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .transaksi-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .transaksi-table th {
+        background: #F8FAFC;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .transaksi-table td {
+        padding: 0.9rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        color: #1E293B;
+        font-size: 0.9rem;
+    }
+
+    .transaksi-table tr:last-child td { border-bottom: none; }
+    .transaksi-table tbody tr:hover td { background: #F8FAFC; }
+
+    /* ── Badges ── */
+    .badge-in {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: #ECFDF5;
+        color: #059669;
+        border: 1px solid #A7F3D0;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 50rem;
+    }
+
+    .badge-out {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: #FEF2F2;
+        color: #DC2626;
+        border: 1px solid #FCA5A5;
+        font-size: 0.76rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 50rem;
+    }
+
+    /* ── Method Badge ── */
+    .method-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        background: #EFF6FF;
+        color: #2F74B5;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.15rem 0.55rem;
+        border-radius: 50rem;
+        border: 1px solid #BFDBFE;
+        white-space: nowrap;
+    }
+
+    /* ══════════════════════════════════════
+       DETAIL MODAL
+    ══════════════════════════════════════ */
+    .detail-info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .detail-info-row:last-child { border-bottom: none; }
+
+    .detail-info-label {
+        font-size: 0.78rem;
+        color: #64748B;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .detail-info-value {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #0F172A;
+        text-align: right;
+    }
+
+    .items-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .items-table th {
+        background: #F8FAFC;
+        color: #475569;
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 0.5rem 0.65rem;
+        border-bottom: 2px solid #E2E8F0;
+        font-weight: 700;
+    }
+    .items-table td {
+        padding: 0.55rem 0.65rem;
+        border-bottom: 1px solid #F1F5F9;
+        color: #1E293B;
+    }
+    .items-table tr:last-child td { border-bottom: none; }
+    .items-table tfoot td {
+        background: #F8FAFC;
+        font-weight: 800;
+        border-top: 2px solid #E2E8F0;
+        padding: 0.6rem 0.65rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="riwayat-wrapper">
+
+    {# ══════════════════════════════
+       HEADER
+    ══════════════════════════════ #}
+    <div class="riwayat-header">
+        <div class="riwayat-header-left">
+            <a href="{{ url_for('usaha.kelola') }}" class="riwayat-back-btn" title="Kembali ke Kelola Usaha">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <h3 class="fw-bold mb-0" style="font-size:1.45rem; color:#0F172A;">Riwayat Transaksi</h3>
+                <span class="text-muted small">Usaha: <strong>{{ active_business.business_name }}</strong></span>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('transaksi.pengeluaran') }}" class="btn-cta-pengeluaran">
+                <i class="bi bi-dash-circle"></i> + Pengeluaran
+            </a>
+            <a href="{{ url_for('transaksi.pemasukan') }}" class="btn-cta-pemasukan">
+                <i class="bi bi-plus-circle"></i> + Pemasukan
+            </a>
+        </div>
+    </div>
+
+    {# ══════════════════════════════
+       SUMMARY CARDS
+    ══════════════════════════════ #}
+    {% set total_pemasukan = history_items | selectattr('type','eq','pemasukan') | map(attribute='total') | sum %}
+    {% set total_pengeluaran = history_items | selectattr('type','eq','pengeluaran') | map(attribute='total') | sum %}
+    {% set net = total_pemasukan - total_pengeluaran %}
+
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="summary-card-label">
+                <i class="bi bi-arrow-down-left text-success me-1"></i> Total Pemasukan
+            </div>
+            <div class="summary-card-value text-success">
+                Rp {{ "{:,.0f}".format(total_pemasukan).replace(',', '.') }}
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-card-label">
+                <i class="bi bi-arrow-up-right text-danger me-1"></i> Total Pengeluaran
+            </div>
+            <div class="summary-card-value text-danger">
+                Rp {{ "{:,.0f}".format(total_pengeluaran).replace(',', '.') }}
+            </div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-card-label">
+                <i class="bi bi-calculator text-primary me-1"></i> Saldo Bersih
+            </div>
+            <div class="summary-card-value {% if net >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {% if net < 0 %}-{% endif %}Rp {{ "{:,.0f}".format(net | abs).replace(',', '.') }}
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════
+       SEARCH & FILTER
+    ══════════════════════════════ #}
+    <div class="filter-card">
+        <form method="GET" action="{{ url_for('transaksi.riwayat') }}" class="row g-2 align-items-center">
+            <div class="col-12 col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-search text-muted small"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           class="form-control border-start-0 bg-light"
+                           placeholder="Cari nomor transaksi atau keperluan..."
+                           value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-8 col-md-4">
+                <select name="jenis" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="semua"      {% if jenis_filter == 'semua'      %}selected{% endif %}>Semua Transaksi</option>
+                    <option value="pemasukan"  {% if jenis_filter == 'pemasukan'  %}selected{% endif %}>🟢 Pemasukan saja</option>
+                    <option value="pengeluaran"{% if jenis_filter == 'pengeluaran'%}selected{% endif %}>🔴 Pengeluaran saja</option>
+                </select>
+            </div>
+            <div class="col-4 col-md-2 d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-3">
+                    <i class="bi bi-search"></i> Cari
+                </button>
+            </div>
+            {% if search or jenis_filter != 'semua' %}
+            <div class="col-12 text-end">
+                <a href="{{ url_for('transaksi.riwayat') }}" class="text-decoration-none small text-muted">
+                    <i class="bi bi-x-circle me-1"></i> Reset Filter
+                </a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+
+    {# ══════════════════════════════
+       TRANSACTION TABLE
+    ══════════════════════════════ #}
+    <div class="transaksi-card">
+        <div class="table-responsive">
+            <table class="transaksi-table">
+                <thead>
+                    <tr>
+                        <th style="width:22%;">No. Transaksi</th>
+                        <th style="width:12%;">Tanggal</th>
+                        <th style="width:10%;">Jam</th>
+                        <th style="width:13%;">Jenis</th>
+                        <th style="width:18%;">Total</th>
+                        <th style="width:15%;">Metode / Kategori</th>
+                        <th style="width:10%; text-align:center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if history_items %}
+                        {% for item in history_items %}
+                        <tr>
+                            {# No. Transaksi #}
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if item.type == 'pemasukan' %}
+                                        <i class="bi bi-arrow-down-left-circle-fill text-success fs-5 flex-shrink-0"></i>
+                                    {% else %}
+                                        <i class="bi bi-arrow-up-right-circle-fill text-danger fs-5 flex-shrink-0"></i>
+                                    {% endif %}
+                                    <span class="fw-bold text-dark" style="font-size:0.85rem;">
+                                        {{ item.transaction_number }}
+                                    </span>
+                                </div>
+                            </td>
+
+                            {# Tanggal #}
+                            <td>
+                                <span class="text-dark small">
+                                    <i class="bi bi-calendar2 me-1 text-muted"></i>
+                                    {{ item.date.strftime('%d/%m/%Y') }}
+                                </span>
+                            </td>
+
+                            {# Jam #}
+                            <td>
+                                <span class="text-muted small">
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ item.date.strftime('%H:%M') }}
+                                </span>
+                            </td>
+
+                            {# Jenis #}
+                            <td>
+                                {% if item.type == 'pemasukan' %}
+                                    <span class="badge-in">
+                                        <i class="bi bi-arrow-down-left"></i> Pemasukan
+                                    </span>
+                                {% else %}
+                                    <span class="badge-out">
+                                        <i class="bi bi-arrow-up-right"></i> Pengeluaran
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            {# Total #}
+                            <td>
+                                {% if item.type == 'pemasukan' %}
+                                    <span class="fw-bold text-success">
+                                        + Rp {{ "{:,.0f}".format(item.total).replace(',', '.') }}
+                                    </span>
+                                {% else %}
+                                    <span class="fw-bold text-danger">
+                                        &minus; Rp {{ "{:,.0f}".format(item.total).replace(',', '.') }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            {# Metode / Kategori #}
+                            <td>
+                                {% if item.type == 'pemasukan' %}
+                                    <span class="method-chip">
+                                        {% if item.payment_method == 'Tunai' %}
+                                            <i class="bi bi-cash-stack"></i>
+                                        {% else %}
+                                            <i class="bi bi-qr-code-scan"></i>
+                                        {% endif %}
+                                        {{ item.payment_method }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge rounded-pill"
+                                          style="background:#FEF2F2; color:#DC2626; font-size:0.72rem; font-weight:600;">
+                                        {{ item.payment_method }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            {# Aksi #}
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-1">
+                                    {% if item.type == 'pemasukan' %}
+                                        {# Detail Button (AJAX) #}
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1"
+                                                onclick="openSaleDetail({{ item.id }})"
+                                                title="Lihat Detail & Download Nota">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    {% else %}
+                                        {# Detail Button (AJAX) #}
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary rounded-3 px-2 py-1"
+                                                onclick="openExpenseDetail({{ item.id }})"
+                                                title="Lihat Detail Pengeluaran">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        {# Edit Button #}
+                                        <a href="{{ url_for('transaksi.edit_pengeluaran', id=item.id) }}"
+                                           class="btn btn-sm btn-outline-warning rounded-3 px-2 py-1"
+                                           title="Edit Pengeluaran">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    {# Hapus #}
+                                    <form action="{{ url_for('transaksi.hapus', item_type=item.type, id=item.id) }}"
+                                          method="POST" class="d-inline"
+                                          onsubmit="return confirm('Hapus transaksi {{ item.transaction_number }}?\n\nAksi ini tidak dapat dibatalkan.');">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1"
+                                                title="Hapus">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-receipt fs-1 d-block mb-2 text-secondary opacity-40"></i>
+                                {% if search %}
+                                    Tidak ada transaksi untuk "<strong>{{ search }}</strong>".
+                                {% else %}
+                                    Belum ada riwayat transaksi.<br>
+                                    <small>Gunakan tombol <strong>+ Pemasukan</strong> atau <strong>+ Pengeluaran</strong> untuk memulai.</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>{# end riwayat-wrapper #}
+
+
+{# ══════════════════════════════════════════════════
+   MODAL — DETAIL TRANSAKSI PEMASUKAN
+══════════════════════════════════════════════════ #}
+<div class="modal fade" id="modalSaleDetail" tabindex="-1"
+     aria-labelledby="modalSaleDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+
+            {# Header #}
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                         style="width:44px; height:44px; background:#ECFDF5;">
+                        <i class="bi bi-receipt text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="modalSaleDetailLabel">Detail Transaksi Pemasukan</h5>
+                        <small class="text-muted" id="sdModalSubtitle">—</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+
+            {# Body #}
+            <div class="modal-body px-4 pt-3 pb-2">
+
+                {# Loading spinner #}
+                <div id="sdLoader" class="text-center py-4">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted small mt-2">Memuat data...</p>
+                </div>
+
+                {# Content (hidden until loaded) #}
+                <div id="sdContent" style="display:none;">
+
+                    {# Info Block #}
+                    <div class="bg-light rounded-3 p-3 mb-3">
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-hash me-1"></i>No. Transaksi</span>
+                            <span class="detail-info-value" id="sdInvoice">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-calendar2 me-1"></i>Tanggal</span>
+                            <span class="detail-info-value" id="sdDate">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-clock me-1"></i>Jam</span>
+                            <span class="detail-info-value" id="sdTime">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-credit-card me-1"></i>Metode Pembayaran</span>
+                            <span class="detail-info-value">
+                                <span class="method-chip" id="sdPayment">—</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {# Items Table #}
+                    <div class="mb-3">
+                        <p class="fw-semibold small text-secondary mb-2">
+                            <i class="bi bi-bag me-1"></i>Daftar Produk
+                            (<span id="sdItemCount">0</span> item)
+                        </p>
+                        <div class="table-responsive rounded-3 border">
+                            <table class="items-table">
+                                <thead>
+                                    <tr>
+                                        <th>Produk</th>
+                                        <th style="text-align:center; width:60px;">Jumlah</th>
+                                        <th style="text-align:right; width:110px;">Harga</th>
+                                        <th style="text-align:right; width:120px;">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sdItemsBody">
+                                    <tr><td colspan="4" class="text-center text-muted">—</td></tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" style="text-align:right; color:#475569;">
+                                            TOTAL PEMBAYARAN
+                                        </td>
+                                        <td style="text-align:right; color:#059669; font-size:1rem;" id="sdTotal">
+                                            Rp 0
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>{# end sdContent #}
+
+            </div>
+
+            {# Footer #}
+            <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex justify-content-between">
+                <a href="#"
+                   id="sdDownloadBtn"
+                   class="btn btn-success rounded-3 fw-bold"
+                   title="Download Struk Nota PDF">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> Download Nota PDF
+                </a>
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-4"
+                        data-bs-dismiss="modal">Tutup</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+{# ══════════════════════════════════════════════════
+   MODAL — DETAIL TRANSAKSI PENGELUARAN
+══════════════════════════════════════════════════ #}
+<div class="modal fade" id="modalExpenseDetail" tabindex="-1"
+     aria-labelledby="modalExpenseDetailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+
+            {# Header #}
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
+                         style="width:44px; height:44px; background:#FEF2F2;">
+                        <i class="bi bi-arrow-up-right-circle text-danger fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="modalExpenseDetailLabel">Detail Pengeluaran</h5>
+                        <small class="text-muted" id="edModalSubtitle">—</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+
+            {# Body #}
+            <div class="modal-body px-4 pt-3 pb-2">
+
+                <div id="edLoader" class="text-center py-4">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="edContent" style="display:none;">
+                    <div class="bg-light rounded-3 p-3">
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-hash me-1"></i>No. Transaksi</span>
+                            <span class="detail-info-value" id="edCode">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-calendar2 me-1"></i>Tanggal</span>
+                            <span class="detail-info-value" id="edDate">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-clock me-1"></i>Jam</span>
+                            <span class="detail-info-value" id="edTime">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-tags me-1"></i>Kategori</span>
+                            <span class="detail-info-value">
+                                <span class="badge rounded-pill" style="background:#FEF2F2; color:#DC2626;" id="edCategory">—</span>
+                            </span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-pencil me-1"></i>Keperluan</span>
+                            <span class="detail-info-value" id="edDescription">—</span>
+                        </div>
+                        <div class="detail-info-row" id="edQtyRow">
+                            <span class="detail-info-label"><i class="bi bi-box me-1"></i>Jumlah</span>
+                            <span class="detail-info-value" id="edQty">—</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-info-label"><i class="bi bi-file-text me-1"></i>Catatan</span>
+                            <span class="detail-info-value fw-normal text-muted" id="edNotes">—</span>
+                        </div>
+                        <div class="detail-info-row" style="background:#FFF5F5; border-radius:0.5rem; padding:0.6rem 0.75rem; margin-top:0.5rem; border-bottom:none;">
+                            <span class="fw-bold text-dark">Total Pengeluaran</span>
+                            <span class="fw-bold text-danger fs-5" id="edTotal">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {# Footer #}
+            <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex justify-content-between">
+                <a href="#" id="edEditBtn"
+                   class="btn btn-outline-warning rounded-3 fw-bold text-dark">
+                    <i class="bi bi-pencil-square me-1"></i> Edit
+                </a>
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-4"
+                        data-bs-dismiss="modal">Tutup</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    var saleDetailUrl    = "{{ url_for('transaksi.detail', id=0) }}".replace('/0', '/');
+    var expenseDetailUrl = "{{ url_for('transaksi.detail_pengeluaran', id=0) }}".replace('/0', '/');
+    var notaBaseUrl      = "{{ url_for('transaksi.download_nota', id=0) }}".replace('/0', '/');
+    var editExpBaseUrl   = "{{ url_for('transaksi.edit_pengeluaran', id=0) }}".replace('/0', '/');
+
+    /* ── SALE DETAIL MODAL ── */
+    window.openSaleDetail = function (saleId) {
+        var modal   = new bootstrap.Modal(document.getElementById('modalSaleDetail'));
+        var loader  = document.getElementById('sdLoader');
+        var content = document.getElementById('sdContent');
+
+        loader.style.display  = 'block';
+        content.style.display = 'none';
+        document.getElementById('sdModalSubtitle').textContent = '—';
+        document.getElementById('sdDownloadBtn').href = notaBaseUrl + saleId;
+        modal.show();
+
+        fetch(saleDetailUrl + saleId)
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                loader.style.display = 'none';
+
+                if (!d.success) {
+                    content.style.display = 'block';
+                    document.getElementById('sdItemsBody').innerHTML =
+                        '<tr><td colspan="4" class="text-center text-danger py-2">Gagal memuat data.</td></tr>';
+                    return;
+                }
+
+                document.getElementById('sdModalSubtitle').textContent = d.invoice_number;
+                document.getElementById('sdInvoice').textContent  = d.invoice_number;
+                document.getElementById('sdDate').textContent     = d.date;
+                document.getElementById('sdTime').textContent     = d.time + ' WIB';
+                document.getElementById('sdPayment').textContent  = d.payment_method;
+                document.getElementById('sdItemCount').textContent = d.items_count;
+                document.getElementById('sdTotal').textContent   = 'Rp ' + d.total.toLocaleString('id-ID');
+
+                var tbody = document.getElementById('sdItemsBody');
+                tbody.innerHTML = '';
+
+                if (d.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-2">Tidak ada item produk.</td></tr>';
+                } else {
+                    d.items.forEach(function (item) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML =
+                            '<td><strong>' + esc(item.product_name) + '</strong></td>' +
+                            '<td style="text-align:center;">' + item.quantity + '</td>' +
+                            '<td style="text-align:right;">Rp ' + item.selling_price.toLocaleString('id-ID') + '</td>' +
+                            '<td style="text-align:right; font-weight:700;">Rp ' + item.subtotal.toLocaleString('id-ID') + '</td>';
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                content.style.display = 'block';
+            })
+            .catch(function () {
+                loader.style.display = 'none';
+                content.style.display = 'block';
+                document.getElementById('sdItemsBody').innerHTML =
+                    '<tr><td colspan="4" class="text-center text-danger py-2">Kesalahan jaringan.</td></tr>';
+            });
+    };
+
+    /* ── EXPENSE DETAIL MODAL ── */
+    window.openExpenseDetail = function (expId) {
+        var modal   = new bootstrap.Modal(document.getElementById('modalExpenseDetail'));
+        var loader  = document.getElementById('edLoader');
+        var content = document.getElementById('edContent');
+
+        loader.style.display  = 'block';
+        content.style.display = 'none';
+        document.getElementById('edEditBtn').href = editExpBaseUrl + expId;
+        modal.show();
+
+        fetch(expenseDetailUrl + expId)
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                loader.style.display = 'none';
+
+                if (!d.success) {
+                    content.style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('edModalSubtitle').textContent = d.transaction_number;
+                document.getElementById('edCode').textContent        = d.transaction_number;
+                document.getElementById('edDate').textContent        = d.date;
+                document.getElementById('edTime').textContent        = d.time + ' WIB';
+                document.getElementById('edCategory').textContent    = d.category;
+                document.getElementById('edDescription').textContent = d.description;
+                document.getElementById('edNotes').textContent       = d.notes || '—';
+                document.getElementById('edTotal').textContent       = 'Rp ' + d.amount_formatted;
+
+                var qtyEl = document.getElementById('edQty');
+                var qtyRow = document.getElementById('edQtyRow');
+                if (d.quantity && d.quantity !== '0') {
+                    qtyEl.textContent = d.quantity + (d.unit ? ' ' + d.unit : '');
+                    qtyRow.style.display = '';
+                } else {
+                    qtyRow.style.display = 'none';
+                }
+
+                content.style.display = 'block';
+            })
+            .catch(function () {
+                loader.style.display = 'none';
+                content.style.display = 'block';
+            });
+    };
+
+    /* ── Escape HTML ── */
+    function esc(str) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
+    }
+
+})();
+</script>
+{% endblock %}

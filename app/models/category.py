@@ -24,5 +24,13 @@ class Category(BaseModel):
         cascade='all, delete-orphan'
     )
 
+    @property
+    def category_name(self):
+        return self.name
+
+    @category_name.setter
+    def category_name(self, value):
+        self.name = value
+
     def __repr__(self):
         return f'<Category {self.name}>'

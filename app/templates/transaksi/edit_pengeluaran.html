@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Transaksi Pengeluaran - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pengeluaran-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .pengeluaran-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pengeluaran-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid var(--card-border);
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+    }
+
+    .pengeluaran-back-btn:hover {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+        transform: translateX(-2px);
+    }
+
+    .pengeluaran-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pengeluaran-wrapper">
+
+    {# ── Header Bar ── #}
+    <div class="pengeluaran-header">
+        <a href="{{ url_for('transaksi.pengeluaran') }}" class="pengeluaran-back-btn" title="Kembali ke Pengeluaran">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h3 class="pengeluaran-title">Edit Transaksi Pengeluaran</h3>
+            <span class="text-muted small">Usaha: <strong>{{ active_business.business_name }}</strong></span>
+        </div>
+    </div>
+
+    {# ── Form Card ── #}
+    <div class="card card-custom border-0 shadow-sm p-4 p-md-5">
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                 style="width: 64px; height: 64px; background-color: #FEF2F2;">
+                <i class="bi bi-pencil-square fs-2 text-danger"></i>
+            </div>
+            <h4 class="fw-bold mb-1">Edit Pengeluaran Usaha</h4>
+            <p class="text-muted small mb-0">Ubah data transaksi pengeluaran <strong>"{{ expense.description }}"</strong>.</p>
+        </div>
+
+        <form action="{{ url_for('transaksi.edit_pengeluaran', id=expense.id) }}" method="POST" novalidate>
+
+            {# 1. Keperluan * #}
+            <div class="mb-3">
+                <label for="description" class="form-label fw-semibold small text-secondary">
+                    Keperluan <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-pencil-square text-muted"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0 bg-light"
+                           id="description"
+                           name="description"
+                           value="{{ form_values.get('description', expense.description) }}"
+                           placeholder="Contoh: Beli Bahan Baku Kopi Robusta"
+                           required>
+                </div>
+            </div>
+
+            {# 2. Kategori Pengeluaran * #}
+            {% set cur_cat = form_values.get('category_name', expense.category_name or (expense.expense_category.name if expense.expense_category else '')) %}
+            <div class="mb-3">
+                <label for="category_name" class="form-label fw-semibold small text-secondary">
+                    Kategori Pengeluaran <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-tags text-muted"></i>
+                    </span>
+                    <select class="form-select border-start-0 bg-light" id="category_name" name="category_name" required>
+                        <option value="" disabled {% if not cur_cat %}selected{% endif %}>-- Pilih Kategori Pengeluaran --</option>
+                        {% for cat in expense_categories %}
+                        <option value="{{ cat }}" {% if cur_cat == cat %}selected{% endif %}>
+                            {{ cat }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {# 3. Jumlah & Satuan #}
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label for="quantity" class="form-label fw-semibold small text-secondary">
+                        Jumlah <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-box text-muted"></i>
+                        </span>
+                        <input type="number"
+                               step="any"
+                               min="0.01"
+                               class="form-control border-start-0 bg-light"
+                               id="quantity"
+                               name="quantity"
+                               value="{{ form_values.get('quantity', expense.quantity if expense.quantity is not none else '1') }}"
+                               placeholder="1"
+                               required>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <label for="unit" class="form-label fw-semibold small text-secondary">
+                        Satuan <span class="text-muted fw-normal">(Opsional)</span>
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-distribute-vertical text-muted"></i>
+                        </span>
+                        <input type="text"
+                               list="unitOptions"
+                               class="form-control border-start-0 bg-light"
+                               id="unit"
+                               name="unit"
+                               value="{{ form_values.get('unit', expense.unit or '') }}"
+                               placeholder="Contoh: kg, pcs, dus">
+                        <datalist id="unitOptions">
+                            {% for u in expense_units %}
+                            <option value="{{ u }}">
+                            {% endfor %}
+                        </datalist>
+                    </div>
+                </div>
+            </div>
+
+            {# 4. Total Pengeluaran * #}
+            <div class="mb-3">
+                <label for="amount" class="form-label fw-semibold small text-secondary">
+                    Total Pengeluaran (Rp) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 fw-bold text-danger">
+                        Rp
+                    </span>
+                    <input type="number"
+                           step="any"
+                           min="1"
+                           class="form-control border-start-0 bg-light"
+                           id="amount"
+                           name="amount"
+                           value="{{ form_values.get('amount', expense.amount | int) }}"
+                           placeholder="Contoh: 150000"
+                           required>
+                </div>
+            </div>
+
+            {# 5. Catatan (Opsional) #}
+            <div class="mb-4">
+                <label for="notes" class="form-label fw-semibold small text-secondary">
+                    Catatan <span class="text-muted fw-normal">(Opsional)</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 align-items-start pt-2">
+                        <i class="bi bi-file-earmark-text text-muted"></i>
+                    </span>
+                    <textarea class="form-control border-start-0 bg-light"
+                              id="notes"
+                              name="notes"
+                              rows="2"
+                              placeholder="Catatan tambahan jika ada...">{{ form_values.get('notes', expense.notes or '') }}</textarea>
+                </div>
+            </div>
+
+            {# Submit Button #}
+            <div class="d-grid">
+                <button type="submit" class="btn btn-danger rounded-3 fw-bold py-2">
+                    <i class="bi bi-check-circle me-2"></i> Simpan Perubahan
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}

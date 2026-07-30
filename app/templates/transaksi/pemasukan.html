@@ -1,0 +1,809 @@
+{% extends "base.html" %}
+
+{% block title %}Kasir Pemasukan - {{ active_business.business_name }} - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ══════════════════════════════════════
+       POS KASIR LAYOUT
+    ══════════════════════════════════════ */
+    .pos-container {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
+
+    .pos-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .pos-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid #E2E8F0;
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .pos-back-btn:hover {
+        background-color: #2F74B5;
+        color: #ffffff;
+        border-color: #2F74B5;
+        transform: translateX(-2px);
+    }
+
+    /* ══════════════════════════════════════
+       ETALASE PRODUK
+    ══════════════════════════════════════ */
+    .etalase-panel {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        overflow: hidden;
+    }
+
+    .etalase-searchbar {
+        padding: 1rem;
+        border-bottom: 1px solid #F1F5F9;
+        background: #F8FAFC;
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.75rem;
+        padding: 1rem;
+        max-height: 480px;
+        overflow-y: auto;
+    }
+
+    .prod-card {
+        background: #ffffff;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 0.85rem;
+        padding: 0.85rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0.5rem;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+        cursor: pointer;
+    }
+
+    .prod-card:hover {
+        border-color: #2F74B5;
+        box-shadow: 0 4px 14px rgba(47,116,181,0.18);
+        transform: translateY(-2px);
+    }
+
+    .prod-card.flash-added {
+        animation: flashAdd 0.35s ease;
+    }
+
+    @keyframes flashAdd {
+        0%  { background: #DBEAFE; border-color: #2F74B5; transform: scale(1.04); }
+        100%{ background: #ffffff; border-color: #E2E8F0; transform: scale(1); }
+    }
+
+    .prod-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #0F172A;
+        line-height: 1.3;
+    }
+
+    .prod-cat-label {
+        font-size: 0.7rem;
+        color: #64748B;
+    }
+
+    .prod-price {
+        font-size: 0.93rem;
+        font-weight: 800;
+        color: #059669;
+    }
+
+    .prod-stock-label {
+        font-size: 0.7rem;
+        color: #94A3B8;
+    }
+
+    .btn-add-cart {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+        width: 100%;
+        background: #EFF6FF;
+        color: #2F74B5;
+        border: 1px solid #BFDBFE;
+        border-radius: 0.55rem;
+        font-weight: 700;
+        font-size: 0.78rem;
+        padding: 0.35rem 0;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .btn-add-cart:hover {
+        background: #2F74B5;
+        color: #ffffff;
+        border-color: #2F74B5;
+    }
+
+    .no-product-msg {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #94A3B8;
+    }
+
+    /* ══════════════════════════════════════
+       KERANJANG (CART PANEL)
+    ══════════════════════════════════════ */
+    .cart-panel {
+        background: #ffffff;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 1rem;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+        position: sticky;
+        top: 76px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .cart-items-scroll {
+        flex: 1;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 0.25rem 0;
+    }
+
+    /* Empty Cart */
+    .cart-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1rem;
+        color: #CBD5E1;
+        text-align: center;
+    }
+
+    .cart-empty i {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Cart Item Row */
+    .cart-item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.65rem 1.1rem;
+        border-bottom: 1px dashed #F1F5F9;
+        transition: background 0.1s;
+    }
+
+    .cart-item:last-child { border-bottom: none; }
+    .cart-item:hover { background: #FAFBFC; }
+
+    .cart-item-info { min-width: 0; }
+
+    .cart-item-name {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #1E293B;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+    }
+
+    .cart-item-price {
+        font-size: 0.75rem;
+        color: #64748B;
+    }
+
+    .cart-item-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        flex-shrink: 0;
+    }
+
+    .btn-qty {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1.5px solid #CBD5E1;
+        background: #F8FAFC;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        line-height: 1;
+        cursor: pointer;
+        transition: all 0.12s ease;
+        flex-shrink: 0;
+    }
+
+    .btn-qty:hover {
+        background: #2F74B5;
+        color: #fff;
+        border-color: #2F74B5;
+    }
+
+    .cart-item-qty {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #0F172A;
+        min-width: 20px;
+        text-align: center;
+    }
+
+    .cart-item-subtotal {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #059669;
+        min-width: 70px;
+        text-align: right;
+    }
+
+    /* Cart Footer */
+    .cart-footer {
+        padding: 1rem 1.1rem;
+        border-top: 1.5px solid #F1F5F9;
+        background: #F8FAFC;
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .total-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #64748B;
+    }
+
+    .total-amount {
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: #059669;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Payment Method */
+    .payment-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .pay-opt {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 0.65rem;
+        padding: 0.6rem 0.5rem;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: #475569;
+        background: #ffffff;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+
+    .pay-opt i {
+        font-size: 1.2rem;
+        margin-bottom: 1px;
+    }
+
+    .pay-opt.active {
+        border-color: #2F74B5;
+        background: #EBF5FF;
+        color: #2F74B5;
+    }
+
+    /* Submit Button */
+    .btn-simpan {
+        width: 100%;
+        background: linear-gradient(135deg, #2F74B5 0%, #1E5A94 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 0.75rem;
+        font-weight: 800;
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+    }
+
+    .btn-simpan:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(47,116,181,0.35);
+    }
+
+    .btn-simpan:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+
+    /* Success Toast */
+    .pos-toast {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 9999;
+        min-width: 280px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-container">
+
+    {# ── Page Header ── #}
+    <div class="pos-header">
+        <a href="{{ url_for('transaksi.riwayat') }}" class="pos-back-btn" title="Kembali ke Riwayat">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h3 class="fw-bold mb-0" style="font-size:1.4rem; color:#0F172A;">Kasir Pemasukan</h3>
+            <span class="text-muted small">Usaha: <strong>{{ active_business.business_name }}</strong></span>
+        </div>
+    </div>
+
+    <div class="row g-3 align-items-start">
+
+        {# ══════════════════════════════
+           KIRI — ETALASE PRODUK
+        ══════════════════════════════ #}
+        <div class="col-12 col-lg-7">
+            <div class="etalase-panel">
+
+                {# Search & Filter Bar #}
+                <div class="etalase-searchbar">
+                    {# Search #}
+                    <div class="input-group flex-grow-1" style="min-width:200px;">
+                        <span class="input-group-text bg-white border-end-0 border-secondary-subtle">
+                            <i class="bi bi-search text-muted small"></i>
+                        </span>
+                        <input type="text"
+                               id="searchProdInput"
+                               class="form-control border-start-0 border-secondary-subtle"
+                               placeholder="Cari nama produk..."
+                               autocomplete="off">
+                    </div>
+                    {# Category Filter #}
+                    <select id="catFilterSelect"
+                            class="form-select border-secondary-subtle"
+                            style="max-width:175px;">
+                        <option value="all">Semua Kategori</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {# Product Grid #}
+                <div class="product-grid" id="productGrid">
+                    {% if products %}
+                        {% for p in products %}
+                        <div class="prod-card"
+                             data-id="{{ p.id }}"
+                             data-name="{{ p.name | e }}"
+                             data-price="{{ p.selling_price }}"
+                             data-cat-id="{{ p.category_id or '' }}">
+
+                            <div>
+                                <div class="prod-name">{{ p.name }}</div>
+                                <div class="prod-cat-label">
+                                    {% if p.category %}{{ p.category.name }}{% else %}Tanpa Kategori{% endif %}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="d-flex justify-content-between align-items-baseline mb-2">
+                                    <span class="prod-price">
+                                        Rp {{ "{:,.0f}".format(p.selling_price).replace(',', '.') }}
+                                    </span>
+                                    <span class="prod-stock-label">
+                                        {% if p.stock is not none %}
+                                            {% if p.stock <= 5 %}
+                                                <span class="text-warning fw-bold">⚠ {{ p.stock }}</span>
+                                            {% else %}
+                                                Stok: {{ p.stock }}
+                                            {% endif %}
+                                        {% else %}
+                                            Ready
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <button type="button" class="btn-add-cart btnAddToCart">
+                                    <i class="bi bi-plus-lg"></i> Tambah
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="no-product-msg">
+                            <i class="bi bi-box-seam d-block mb-2 opacity-40" style="font-size:2.5rem;"></i>
+                            <strong>Belum ada produk aktif.</strong><br>
+                            <small>Tambahkan produk terlebih dahulu di menu <em>Kelola Produk</em>.</small>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {# No results state (hidden by default) #}
+                <div id="noSearchResult" class="no-product-msg" style="display:none;">
+                    <i class="bi bi-search d-block mb-2 opacity-40" style="font-size:2rem;"></i>
+                    Produk tidak ditemukan.
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════
+           KANAN — KERANJANG
+        ══════════════════════════════ #}
+        <div class="col-12 col-lg-5">
+            <div class="cart-panel">
+
+                {# Cart Header #}
+                <div class="cart-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-cart3 text-primary fs-5"></i>
+                        <span class="fw-bold text-dark">Keranjang</span>
+                        <span class="badge bg-primary rounded-pill small" id="cartCountBadge"
+                              style="display:none;">0</span>
+                    </div>
+                    <button type="button"
+                            id="btnClearCart"
+                            class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-semibold"
+                            style="font-size:0.82rem;">
+                        <i class="bi bi-x-circle me-1"></i> Kosongkan
+                    </button>
+                </div>
+
+                {# Cart Items Scroll Area #}
+                <div class="cart-items-scroll" id="cartItemsList">
+                    {# Empty state — shown initially #}
+                    <div class="cart-empty" id="emptyCartMsg">
+                        <i class="bi bi-basket"></i>
+                        <span class="small">Keranjang kosong.<br>Pilih produk dari etalase.</span>
+                    </div>
+                </div>
+
+                {# Cart Footer #}
+                <div class="cart-footer">
+
+                    {# Total #}
+                    <div class="total-row">
+                        <span class="total-label">Total Pembayaran</span>
+                        <span class="total-amount" id="cartTotalText">Rp 0</span>
+                    </div>
+
+                    {# Payment Method #}
+                    <label class="form-label fw-semibold small text-secondary mb-2">
+                        Metode Pembayaran <span class="text-danger">*</span>
+                    </label>
+                    <div class="payment-options mb-3">
+                        <div class="pay-opt active" id="payTunai" data-method="Tunai">
+                            <i class="bi bi-cash-stack"></i>
+                            Tunai
+                        </div>
+                        <div class="pay-opt" id="payNonTunai" data-method="Non Tunai">
+                            <i class="bi bi-qr-code-scan"></i>
+                            Non Tunai
+                        </div>
+                    </div>
+
+                    {# Alert Box #}
+                    <div id="posAlert" class="alert alert-danger py-2 px-3 small mb-3 d-none"
+                         role="alert"></div>
+
+                    {# Submit #}
+                    <button type="button" class="btn-simpan" id="btnSaveTransaction">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Simpan Transaksi
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{# Toast Notification #}
+<div class="pos-toast" id="posToast" style="display:none;">
+    <div class="alert alert-success alert-dismissible shadow-sm d-flex align-items-center gap-2 mb-0 rounded-3"
+         role="alert">
+        <i class="bi bi-check-circle-fill fs-5"></i>
+        <span id="posToastMsg">Transaksi berhasil disimpan!</span>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    /* ─── STATE ─────────────────────────────────── */
+    var cart = [];              // [{ product_id, name, price, quantity }]
+    var selectedPayment = 'Tunai';
+
+    /* ─── DOM REFS ──────────────────────────────── */
+    var searchInput     = document.getElementById('searchProdInput');
+    var catSelect       = document.getElementById('catFilterSelect');
+    var productGrid     = document.getElementById('productGrid');
+    var noSearchResult  = document.getElementById('noSearchResult');
+    var cartItemsList   = document.getElementById('cartItemsList');
+    var emptyCartMsg    = document.getElementById('emptyCartMsg');
+    var cartTotalText   = document.getElementById('cartTotalText');
+    var cartCountBadge  = document.getElementById('cartCountBadge');
+    var btnClearCart    = document.getElementById('btnClearCart');
+    var btnSave         = document.getElementById('btnSaveTransaction');
+    var alertBox        = document.getElementById('posAlert');
+    var payTunai        = document.getElementById('payTunai');
+    var payNonTunai     = document.getElementById('payNonTunai');
+
+    /* ─── 1. PAYMENT METHOD ─────────────────────── */
+    payTunai.addEventListener('click', function () {
+        payTunai.classList.add('active');
+        payNonTunai.classList.remove('active');
+        selectedPayment = 'Tunai';
+    });
+    payNonTunai.addEventListener('click', function () {
+        payNonTunai.classList.add('active');
+        payTunai.classList.remove('active');
+        selectedPayment = 'Non Tunai';
+    });
+
+    /* ─── 2. REALTIME SEARCH + CATEGORY FILTER ─── */
+    function filterProducts() {
+        var query  = searchInput.value.toLowerCase().trim();
+        var selCat = catSelect.value;
+        var cards  = productGrid.querySelectorAll('.prod-card');
+        var visible = 0;
+
+        cards.forEach(function (card) {
+            var name  = card.dataset.name.toLowerCase();
+            var catId = card.dataset.catId;
+            var matchQ = !query || name.indexOf(query) !== -1;
+            var matchC = (selCat === 'all') || (catId === selCat);
+            if (matchQ && matchC) {
+                card.style.display = '';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        noSearchResult.style.display = (visible === 0 && cards.length > 0) ? 'block' : 'none';
+    }
+
+    if (searchInput) searchInput.addEventListener('input', filterProducts);
+    if (catSelect)   catSelect.addEventListener('change', filterProducts);
+
+    /* ─── 3. ADD TO CART ────────────────────────── */
+    productGrid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnAddToCart');
+        if (!btn) return;
+
+        var card = btn.closest('.prod-card');
+        var id    = parseInt(card.dataset.id);
+        var name  = card.dataset.name;
+        var price = parseFloat(card.dataset.price);
+
+        var existing = cart.find(function (i) { return i.product_id === id; });
+        if (existing) {
+            existing.quantity += 1;
+        } else {
+            cart.push({ product_id: id, name: name, price: price, quantity: 1 });
+        }
+
+        /* flash animation on card */
+        card.classList.remove('flash-added');
+        void card.offsetWidth; /* reflow */
+        card.classList.add('flash-added');
+
+        renderCart();
+        hideAlert();
+    });
+
+    /* ─── 4. RENDER CART ────────────────────────── */
+    function renderCart() {
+        /* clear dynamic items */
+        var existingRows = cartItemsList.querySelectorAll('.cart-item');
+        existingRows.forEach(function (r) { r.remove(); });
+
+        if (cart.length === 0) {
+            emptyCartMsg.style.display = 'flex';
+            cartTotalText.textContent  = 'Rp 0';
+            cartCountBadge.style.display = 'none';
+            cartCountBadge.textContent = '0';
+            return;
+        }
+
+        emptyCartMsg.style.display = 'none';
+
+        var grandTotal = 0;
+        var totalQty   = 0;
+
+        cart.forEach(function (item, idx) {
+            var sub = item.price * item.quantity;
+            grandTotal += sub;
+            totalQty   += item.quantity;
+
+            var row = document.createElement('div');
+            row.className = 'cart-item';
+            row.innerHTML =
+                /* left: name + price */
+                '<div class="cart-item-info">' +
+                    '<div class="cart-item-name">' + escHtml(item.name) + '</div>' +
+                    '<div class="cart-item-price">Rp ' + fmtNum(item.price) + '</div>' +
+                '</div>' +
+                /* right: [−] qty [+] subtotal */
+                '<div class="cart-item-controls">' +
+                    '<button type="button" class="btn-qty btnMinus" data-idx="' + idx + '">−</button>' +
+                    '<span class="cart-item-qty">' + item.quantity + '</span>' +
+                    '<button type="button" class="btn-qty btnPlus" data-idx="' + idx + '">+</button>' +
+                    '<span class="cart-item-subtotal">Rp ' + fmtNum(sub) + '</span>' +
+                '</div>';
+
+            cartItemsList.appendChild(row);
+        });
+
+        cartTotalText.textContent = 'Rp ' + fmtNum(grandTotal);
+        cartCountBadge.textContent = totalQty;
+        cartCountBadge.style.display = '';
+    }
+
+    /* ─── 5. CART QUANTITY CONTROLS ─────────────── */
+    cartItemsList.addEventListener('click', function (e) {
+        var minus = e.target.closest('.btnMinus');
+        var plus  = e.target.closest('.btnPlus');
+
+        if (minus) {
+            var i = parseInt(minus.dataset.idx);
+            if (cart[i].quantity > 1) { cart[i].quantity -= 1; }
+            else                      { cart.splice(i, 1); }
+            renderCart();
+        } else if (plus) {
+            var j = parseInt(plus.dataset.idx);
+            cart[j].quantity += 1;
+            renderCart();
+        }
+    });
+
+    /* ─── 6. CLEAR CART ─────────────────────────── */
+    btnClearCart.addEventListener('click', function () {
+        if (cart.length === 0) return;
+        if (!confirm('Kosongkan seluruh keranjang?')) return;
+        cart = [];
+        renderCart();
+    });
+
+    /* ─── 7. SAVE TRANSACTION ───────────────────── */
+    btnSave.addEventListener('click', function () {
+        hideAlert();
+
+        if (cart.length === 0) {
+            showAlert('Keranjang masih kosong. Tambahkan produk terlebih dahulu.');
+            return;
+        }
+
+        setBtnLoading(true);
+
+        fetch("{{ url_for('transaksi.pemasukan') }}", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                items:          cart,
+                payment_method: selectedPayment
+            })
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            if (data.success) {
+                showToast('Transaksi ' + data.invoice_number + ' berhasil disimpan!');
+                cart = [];
+                renderCart();
+                setTimeout(function () {
+                    window.location.href = data.redirect_url;
+                }, 1200);
+            } else {
+                showAlert(data.message || 'Gagal menyimpan transaksi.');
+                setBtnLoading(false);
+            }
+        })
+        .catch(function () {
+            showAlert('Terjadi kesalahan jaringan. Coba lagi.');
+            setBtnLoading(false);
+        });
+    });
+
+    /* ─── HELPERS ───────────────────────────────── */
+    function fmtNum(n) {
+        return n.toLocaleString('id-ID');
+    }
+
+    function escHtml(str) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(str));
+        return d.innerHTML;
+    }
+
+    function showAlert(msg) {
+        alertBox.textContent = msg;
+        alertBox.classList.remove('d-none');
+    }
+
+    function hideAlert() {
+        alertBox.classList.add('d-none');
+    }
+
+    function setBtnLoading(loading) {
+        btnSave.disabled = loading;
+        btnSave.innerHTML = loading
+            ? '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...'
+            : '<i class="bi bi-check-circle-fill"></i> Simpan Transaksi';
+    }
+
+    function showToast(msg) {
+        var toast = document.getElementById('posToast');
+        document.getElementById('posToastMsg').textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(function () { toast.style.display = 'none'; }, 3000);
+    }
+
+    /* Init */
+    renderCart();
+
+})();
+</script>
+{% endblock %}

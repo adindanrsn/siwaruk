@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}Kelola Produk - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ─── Page Container ─── */
+    .produk-page-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    /* ─── Header Bar ─── */
+    .produk-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .produk-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .produk-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid var(--card-border);
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+    }
+
+    .produk-back-btn:hover {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+        transform: translateX(-2px);
+    }
+
+    .produk-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin: 0;
+        letter-spacing: -0.3px;
+    }
+
+    /* ─── Controls & Filter Bar ─── */
+    .filter-card {
+        background: #ffffff;
+        border: 1px solid var(--card-border);
+        border-radius: 1rem;
+        padding: 1.25rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        margin-bottom: 1.5rem;
+    }
+
+    /* ─── Product Card & Table ─── */
+    .produk-card {
+        background: #ffffff;
+        border: 1px solid var(--card-border);
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .produk-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .produk-table th {
+        background-color: #F8FAFC;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .produk-table td {
+        padding: 1.1rem 1.25rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        color: #1E293B;
+        font-size: 0.95rem;
+    }
+
+    .produk-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .produk-table tr:hover td {
+        background-color: #F8FAFC;
+    }
+
+    /* ─── Action Buttons ─── */
+    .btn-action-edit {
+        background-color: #EFF6FF;
+        color: #2F74B5;
+        border: 1px solid #BFDBFE;
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .btn-action-edit:hover {
+        background-color: #2F74B5;
+        color: #ffffff;
+        border-color: #2F74B5;
+    }
+
+    .btn-action-delete {
+        background-color: #FEF2F2;
+        color: #EF4444;
+        border: 1px solid #FECACA;
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .btn-action-delete:hover {
+        background-color: #EF4444;
+        color: #ffffff;
+        border-color: #EF4444;
+    }
+
+    /* Low stock warning badge */
+    .badge-low-stock {
+        background-color: #FEF2F2;
+        color: #DC2626;
+        border: 1px solid #FCA5A5;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.25rem 0.6rem;
+        border-radius: 50rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .badge-category {
+        background-color: #F1F5F9;
+        color: #475569;
+        border: 1px solid #CBD5E1;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        border-radius: 0.35rem;
+    }
+
+    .btn-add-produk {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 0.65rem 1.3rem;
+        border-radius: 50rem;
+        border: none;
+        box-shadow: 0 4px 12px rgba(47, 116, 181, 0.25);
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+    }
+
+    .btn-add-produk:hover {
+        background-color: var(--primary-dark);
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="produk-page-wrapper">
+
+    {# ── Top Header Bar ── #}
+    <div class="produk-header">
+        <div class="produk-header-left">
+            <a href="{{ url_for('usaha.kelola') }}" class="produk-back-btn" title="Kembali ke Kelola Usaha">
+                <i class="bi bi-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <h3 class="produk-title">Kelola Produk</h3>
+                <span class="text-muted small">Usaha Aktif: <strong>{{ active_business.business_name }}</strong></span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-2 fw-semibold"
+                    data-bs-toggle="modal"
+                    data-bs-target="#kelolaKategoriModal">
+                <i class="bi bi-tags me-1"></i> Kelola Kategori
+            </button>
+            <a href="{{ url_for('produk.tambah') }}" class="btn-add-produk">
+                <i class="bi bi-plus-lg"></i> Tambah Produk
+            </a>
+        </div>
+    </div>
+
+    {# ── Search, Filter & Sort Controls Bar ── #}
+    <div class="filter-card">
+        <form method="GET" action="{{ url_for('produk.index') }}" class="row g-2 align-items-center">
+
+            {# 1. Search Box #}
+            <div class="col-12 col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           class="form-control border-start-0 bg-light"
+                           placeholder="Cari produk..."
+                           value="{{ search }}">
+                </div>
+            </div>
+
+            {# 2. Category Filter #}
+            <div class="col-6 col-md-3">
+                <select name="kategori_id" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="all" {% if selected_kategori == 'all' %}selected{% endif %}>Semua Kategori</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if selected_kategori == (cat.id | string) %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# 3. Sorting Dropdown #}
+            <div class="col-6 col-md-3">
+                <select name="sort" class="form-select bg-light" onchange="this.form.submit()">
+                    <option value="created_desc" {% if selected_sort == 'created_desc' %}selected{% endif %}>Terbaru</option>
+                    <option value="name_asc" {% if selected_sort == 'name_asc' %}selected{% endif %}>Nama A-Z</option>
+                    <option value="name_desc" {% if selected_sort == 'name_desc' %}selected{% endif %}>Nama Z-A</option>
+                    <option value="price_asc" {% if selected_sort == 'price_asc' %}selected{% endif %}>Harga Terendah</option>
+                    <option value="price_desc" {% if selected_sort == 'price_desc' %}selected{% endif %}>Harga Tertinggi</option>
+                    <option value="stock_desc" {% if selected_sort == 'stock_desc' %}selected{% endif %}>Stok Terbanyak</option>
+                    <option value="stock_asc" {% if selected_sort == 'stock_asc' %}selected{% endif %}>Stok Tersedikit</option>
+                </select>
+            </div>
+
+            {# Reset button if filtered #}
+            {% if search or (selected_kategori != 'all') or (selected_sort != 'created_desc') %}
+            <div class="col-12 text-end mt-2">
+                <a href="{{ url_for('produk.index') }}" class="text-decoration-none small text-muted">
+                    <i class="bi bi-x-circle me-1"></i> Reset Filter
+                </a>
+            </div>
+            {% endif %}
+
+        </form>
+    </div>
+
+    {# ── Table of Products ── #}
+    <div class="produk-card">
+        <div class="table-responsive">
+            <table class="produk-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35%;">Nama Produk</th>
+                        <th style="width: 20%;">Harga</th>
+                        <th style="width: 20%;">Kategori</th>
+                        <th style="width: 15%;">Stok</th>
+                        <th style="width: 10%; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if products | length > 0 %}
+                        {% for p in products %}
+                        <tr>
+
+                            {# Nama Produk #}
+                            <td>
+                                <div class="fw-bold text-dark d-flex align-items-center">
+                                    <i class="bi bi-box-seam me-2 text-primary"></i>
+                                    {{ p.name }}
+                                </div>
+                            </td>
+
+                            {# Harga #}
+                            <td>
+                                <span class="fw-semibold text-success">
+                                    Rp {{ "{:,.0f}".format(p.selling_price).replace(',', '.') }}
+                                </span>
+                            </td>
+
+                            {# Kategori #}
+                            <td>
+                                {% if p.category %}
+                                    <span class="badge-category">{{ p.category.name }}</span>
+                                {% else %}
+                                    <span class="text-muted small fst-italic">Tanpa Kategori</span>
+                                {% endif %}
+                            </td>
+
+                            {# Stok & Low Stock Warning #}
+                            <td>
+                                {% if p.stock is none %}
+                                    <span class="text-muted small">Tidak dicatat</span>
+                                {% else %}
+                                    <span class="fw-bold me-1">{{ p.stock }}</span>
+                                    {% if p.stock <= 5 %}
+                                        <span class="badge-low-stock" title="Stok menipis (<= 5)">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> Stok Menipis
+                                        </span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+
+                            {# Aksi Edit / Hapus #}
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-2">
+                                    <a href="{{ url_for('produk.edit', id=p.id) }}"
+                                       class="btn-action-edit"
+                                       title="Edit Produk">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </a>
+                                    <button type="button"
+                                            class="btn-action-delete"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteProductModal{{ p.id }}"
+                                            title="Hapus Produk">
+                                        <i class="bi bi-trash"></i> Hapus
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        {# ── Delete Product Modal ── #}
+                        <div class="modal fade" id="deleteProductModal{{ p.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-danger">
+                                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus Produk
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body py-3">
+                                        <p class="mb-0">Apakah Anda yakin ingin menghapus produk <strong>"{{ p.name }}"</strong>?</p>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0">
+                                        <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                                        <form action="{{ url_for('produk.hapus', id=p.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-danger rounded-3 fw-bold">Hapus</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-box-seam fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                {% if search or selected_kategori != 'all' %}
+                                    Tidak ada produk yang sesuai dengan filter pencarian.
+                                {% else %}
+                                    Belum ada produk. Silakan klik <strong>"Tambah Produk"</strong> untuk menambahkan produk pertama Anda.
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{# ── Kelola Kategori Modal ── #}
+<div class="modal fade" id="kelolaKategoriModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark">
+                    <i class="bi bi-tags-fill text-primary me-2"></i>Kelola Kategori Produk
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+
+                {# Form Tambah Kategori Baru #}
+                <div class="input-group mb-3">
+                    <input type="text"
+                           id="modalCategoryInput"
+                           class="form-control bg-light"
+                           placeholder="Nama kategori baru...">
+                    <button type="button" class="btn btn-primary-custom fw-bold px-3" id="btnSaveCategoryModal">
+                        <i class="bi bi-plus-lg me-1"></i> Tambah
+                    </button>
+                </div>
+                <div id="modalCatAlert" class="small mb-2 d-none"></div>
+
+                {# Daftar Kategori Existing #}
+                <label class="form-label fw-semibold small text-secondary">Kategori Dipunyai Usaha Ini:</label>
+                <div class="list-group list-group-flush border rounded-3" style="max-height: 220px; overflow-y: auto;" id="modalCategoryList">
+                    {% if categories | length > 0 %}
+                        {% for cat in categories %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <span class="fw-semibold text-dark">{{ cat.name }}</span>
+                            <form action="{{ url_for('produk.hapus_kategori', id=cat.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus kategori ini? Produk yang menggunakan kategori ini tidak akan terhapus.');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger border-0 p-1" title="Hapus Kategori">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item text-center text-muted py-3 small" id="emptyCatMsg">
+                            Belum ada kategori yang dibuat.
+                        </div>
+                    {% endif %}
+                </div>
+
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    var btnSaveCat = document.getElementById('btnSaveCategoryModal');
+    var catInput = document.getElementById('modalCategoryInput');
+    var alertBox = document.getElementById('modalCatAlert');
+    var catList = document.getElementById('modalCategoryList');
+
+    if (btnSaveCat && catInput) {
+        btnSaveCat.addEventListener('click', function () {
+            var catName = catInput.value.trim();
+            if (!catName) {
+                showAlert('Nama kategori tidak boleh kosong.', 'text-danger');
+                return;
+            }
+
+            fetch("{{ url_for('produk.tambah_kategori') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ category_name: catName })
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    showAlert(data.message, 'text-success');
+                    catInput.value = '';
+
+                    // Hide empty message if present
+                    var emptyMsg = document.getElementById('emptyCatMsg');
+                    if (emptyMsg) emptyMsg.style.display = 'none';
+
+                    // Append new item to category list
+                    var item = document.createElement('div');
+                    item.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-3';
+                    item.innerHTML = '<span class="fw-semibold text-dark">' + data.category.name + '</span>' +
+                        '<form action="/produk/kategori/hapus/' + data.category.id + '" method="POST" class="d-inline" onsubmit="return confirm(\'Hapus kategori ini?\');">' +
+                        '<button type="submit" class="btn btn-sm btn-outline-danger border-0 p-1"><i class="bi bi-trash"></i></button></form>';
+                    catList.appendChild(item);
+
+                    // Reload page after brief delay to refresh filter dropdown
+                    setTimeout(function () {
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    showAlert(data.message || 'Gagal menambahkan kategori.', 'text-danger');
+                }
+            })
+            .catch(function (err) {
+                showAlert('Terjadi kesalahan koneksi.', 'text-danger');
+            });
+        });
+    }
+
+    function showAlert(msg, colorClass) {
+        alertBox.className = 'small mb-2 ' + colorClass;
+        alertBox.textContent = msg;
+        alertBox.classList.remove('d-none');
+    }
+})();
+</script>
+{% endblock %}

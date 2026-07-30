@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Produk Baru - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tambah-produk-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .tambah-produk-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .tambah-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid var(--card-border);
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+    }
+
+    .tambah-back-btn:hover {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+        transform: translateX(-2px);
+    }
+
+    .tambah-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin: 0;
+    }
+
+    .btn-add-cat-trigger {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .btn-add-cat-trigger:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tambah-produk-wrapper">
+
+    {# ── Header Bar ── #}
+    <div class="tambah-produk-header">
+        <a href="{{ url_for('produk.index') }}" class="tambah-back-btn" title="Kembali ke Kelola Produk">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h3 class="tambah-title">Tambah Produk Baru</h3>
+            <span class="text-muted small">Usaha: <strong>{{ active_business.business_name }}</strong></span>
+        </div>
+    </div>
+
+    {# ── Form Card ── #}
+    <div class="card card-custom border-0 shadow-sm p-4 p-md-5">
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3"
+                 style="width: 64px; height: 64px; background-color: #EBF6FF;">
+                <i class="bi bi-box-seam fs-2 text-primary"></i>
+            </div>
+            <h4 class="fw-bold mb-1">Tambah Data Produk Baru</h4>
+            <p class="text-muted small mb-0">Isi rincian informasi produk baru Anda di bawah ini.</p>
+        </div>
+
+        <form action="{{ url_for('produk.tambah') }}" method="POST" id="formTambahProduk" novalidate>
+
+            {# 1. Nama Produk * #}
+            <div class="mb-3">
+                <label for="product_name" class="form-label fw-semibold small text-secondary">
+                    Nama Produk <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-tag text-muted"></i>
+                    </span>
+                    <input type="text"
+                           class="form-control border-start-0 bg-light"
+                           id="product_name"
+                           name="product_name"
+                           value="{{ form_values.get('product_name', '') }}"
+                           placeholder="Contoh: Kopi Susu Gula Aren"
+                           maxlength="100"
+                           required>
+                </div>
+            </div>
+
+            {# 2. Harga * #}
+            <div class="mb-3">
+                <label for="price" class="form-label fw-semibold small text-secondary">
+                    Harga (Rp) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0 fw-bold text-secondary">
+                        Rp
+                    </span>
+                    <input type="number"
+                           step="any"
+                           min="1"
+                           class="form-control border-start-0 bg-light"
+                           id="price"
+                           name="price"
+                           value="{{ form_values.get('price', '') }}"
+                           placeholder="Contoh: 15000"
+                           required>
+                </div>
+            </div>
+
+            {# 3. Kategori (Dropdown) #}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label for="category_id" class="form-label fw-semibold small text-secondary mb-0">
+                        Kategori <span class="text-muted fw-normal">(Opsional)</span>
+                    </label>
+                    <a type="button" class="btn-add-cat-trigger" id="btnTriggerModalCat">
+                        <i class="bi bi-plus-circle me-1"></i> Tambah Kategori Baru
+                    </a>
+                </div>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-folder text-muted"></i>
+                    </span>
+                    <select class="form-select border-start-0 bg-light" id="category_id" name="category_id">
+                        <option value="">-- Pilih Kategori --</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if form_values.get('category_id') == (cat.id | string) %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                        {% endfor %}
+                        <option value="__NEW__" class="fw-bold text-primary">+ Tambah Kategori Baru</option>
+                    </select>
+                </div>
+            </div>
+
+            {# 4. Stok (Optional) #}
+            <div class="mb-4">
+                <label for="stock" class="form-label fw-semibold small text-secondary">
+                    Stok <span class="text-muted fw-normal">(Opsional - Kosongkan jika tidak mencatat stok)</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-stack text-muted"></i>
+                    </span>
+                    <input type="number"
+                           min="0"
+                           class="form-control border-start-0 bg-light"
+                           id="stock"
+                           name="stock"
+                           value="{{ form_values.get('stock', '') }}"
+                           placeholder="Contoh: 50 (Opsional)">
+                </div>
+            </div>
+
+            {# Submit Button #}
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold py-2">
+                    <i class="bi bi-check-circle me-2"></i> Simpan Produk
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+{# ── Modal Inline Tambah Kategori Baru ── #}
+<div class="modal fade" id="modalInlineCategory" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark">
+                    <i class="bi bi-plus-circle text-primary me-2"></i>Tambah Kategori Baru
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="mb-3">
+                    <label for="inlineCatName" class="form-label fw-semibold small text-secondary">Nama Kategori <span class="text-danger">*</span></label>
+                    <input type="text"
+                           id="inlineCatName"
+                           class="form-control bg-light"
+                           placeholder="Contoh: Makanan, Minuman, Coffee...">
+                </div>
+                <div id="inlineCatAlert" class="small d-none"></div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary-custom rounded-3 fw-bold px-4" id="btnSaveInlineCategory">
+                    <i class="bi bi-plus-lg me-1"></i> Simpan Kategori
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    var catSelect = document.getElementById('category_id');
+    var btnTrigger = document.getElementById('btnTriggerModalCat');
+    var modalEl = document.getElementById('modalInlineCategory');
+    var modalObj = new bootstrap.Modal(modalEl);
+    var inlineCatName = document.getElementById('inlineCatName');
+    var btnSaveInline = document.getElementById('btnSaveInlineCategory');
+    var alertBox = document.getElementById('inlineCatAlert');
+
+    function openCatModal() {
+        inlineCatName.value = '';
+        alertBox.classList.add('d-none');
+        modalObj.show();
+        setTimeout(function() { inlineCatName.focus(); }, 300);
+    }
+
+    if (btnTrigger) {
+        btnTrigger.addEventListener('click', openCatModal);
+    }
+
+    if (catSelect) {
+        catSelect.addEventListener('change', function () {
+            if (this.value === '__NEW__') {
+                this.value = ''; // Reset select value while creating
+                openCatModal();
+            }
+        });
+    }
+
+    if (btnSaveInline) {
+        btnSaveInline.addEventListener('click', function () {
+            var name = inlineCatName.value.trim();
+            if (!name) {
+                showAlert('Nama kategori tidak boleh kosong.', 'text-danger');
+                return;
+            }
+
+            fetch("{{ url_for('produk.tambah_kategori') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category_name: name })
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    // Create new option element before __NEW__ option
+                    var newOpt = document.createElement('option');
+                    newOpt.value = data.category.id;
+                    newOpt.textContent = data.category.name;
+                    newOpt.selected = true;
+
+                    // Find '__NEW__' option to insert before it
+                    var newOptionTrigger = catSelect.querySelector('option[value="__NEW__"]');
+                    catSelect.insertBefore(newOpt, newOptionTrigger);
+
+                    modalObj.hide();
+                } else {
+                    showAlert(data.message || 'Gagal menambahkan kategori.', 'text-danger');
+                }
+            })
+            .catch(function () {
+                showAlert('Terjadi kesalahan jaringan.', 'text-danger');
+            });
+        });
+    }
+
+    function showAlert(msg, colorClass) {
+        alertBox.className = 'small ' + colorClass;
+        alertBox.textContent = msg;
+        alertBox.classList.remove('d-none');
+    }
+})();
+</script>
+{% endblock %}

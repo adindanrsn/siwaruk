@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}Pengaturan Usaha - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ─── Page Container ─── */
+    .pengaturan-page-wrapper {
+        max-width: 850px;
+        margin: 0 auto;
+    }
+
+    /* ─── Header Bar ─── */
+    .pengaturan-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .pengaturan-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid var(--card-border);
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+    }
+
+    .pengaturan-back-btn:hover {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+        transform: translateX(-2px);
+    }
+
+    .pengaturan-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin: 0;
+        letter-spacing: -0.3px;
+    }
+
+    /* ─── Card & Table ─── */
+    .pengaturan-card {
+        background: #ffffff;
+        border: 1px solid var(--card-border);
+        border-radius: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .pengaturan-table {
+        width: 100%;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .pengaturan-table th {
+        background-color: #F8FAFC;
+        color: #475569;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .pengaturan-table td {
+        padding: 1.1rem 1.25rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        color: #1E293B;
+        font-size: 0.95rem;
+    }
+
+    .pengaturan-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .pengaturan-table tr:hover td {
+        background-color: #F8FAFC;
+    }
+
+    /* ─── Action Buttons ─── */
+    .btn-action-edit {
+        background-color: #EFF6FF;
+        color: #2F74B5;
+        border: 1px solid #BFDBFE;
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .btn-action-edit:hover {
+        background-color: #2F74B5;
+        color: #ffffff;
+        border-color: #2F74B5;
+    }
+
+    .btn-action-delete {
+        background-color: #FEF2F2;
+        color: #EF4444;
+        border: 1px solid #FECACA;
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .btn-action-delete:hover {
+        background-color: #EF4444;
+        color: #ffffff;
+        border-color: #EF4444;
+    }
+
+    /* Active business badge */
+    .badge-active-tag {
+        background-color: #ECFDF5;
+        color: #059669;
+        border: 1px solid #A7F3D0;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.2rem 0.55rem;
+        border-radius: 1rem;
+        margin-left: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    /* ─── Bottom-Right Add Button ─── */
+    .pengaturan-footer-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+    }
+
+    .btn-add-usaha-new {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 0.75rem 1.6rem;
+        border-radius: 50rem;
+        border: none;
+        box-shadow: 0 4px 12px rgba(47, 116, 181, 0.3);
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-add-usaha-new:hover {
+        background-color: var(--primary-dark);
+        color: #ffffff;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(47, 116, 181, 0.4);
+    }
+
+    /* ─── Certification Chips (Modal) ─── */
+    .cert-chips-wrapper-modal {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .cert-chip-modal {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.4rem 0.9rem;
+        border-radius: 50rem;
+        border: 1.5px solid #CBD5E1;
+        background-color: #ffffff;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.82rem;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+    }
+
+    .cert-chip-modal:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+
+    .cert-chip-modal.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: #ffffff;
+    }
+
+    .cert-chip-modal .cert-check-icon {
+        display: none;
+        font-size: 0.8rem;
+    }
+
+    .cert-chip-modal.active .cert-check-icon {
+        display: inline;
+    }
+
+    .cert-number-field-modal {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.2s ease;
+        margin-bottom: 0;
+    }
+
+    .cert-number-field-modal.visible {
+        max-height: 100px;
+        opacity: 1;
+        margin-bottom: 0.6rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pengaturan-page-wrapper">
+
+    {# ── Top Header ── #}
+    <div class="pengaturan-header">
+        <a href="{{ url_for('usaha.kelola') }}" class="pengaturan-back-btn" title="Kembali ke Kelola Usaha">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <h3 class="pengaturan-title">Atur Usaha</h3>
+    </div>
+
+    {# ── Table of Businesses ── #}
+    {% set active_biz_id = session.get('active_business_id') %}
+
+    <div class="pengaturan-card">
+        <div class="table-responsive">
+            <table class="pengaturan-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Nama Usaha</th>
+                        <th style="width: 35%;">Bidang Usaha</th>
+                        <th style="width: 25%; text-align: center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if businesses | length > 0 %}
+                        {% for biz in businesses %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark d-flex align-items-center">
+                                    <i class="bi bi-shop me-2 text-primary"></i>
+                                    {{ biz.business_name }}
+                                    {% if biz.id == active_biz_id %}
+                                    <span class="badge-active-tag">
+                                        <i class="bi bi-check-circle-fill"></i> Aktif
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted ms-4 d-block">{{ biz.owner_name }}</small>
+                            </td>
+                            <td>
+                                {% if biz.bidang_usaha %}
+                                    <span class="text-secondary">
+                                        <i class="bi bi-tag me-1 text-muted"></i>{{ biz.bidang_usaha }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted fst-italic">Belum diatur</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-2">
+                                    <button type="button"
+                                            class="btn-action-edit"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editUsahaModal{{ biz.id }}"
+                                            title="Edit Usaha">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </button>
+                                    <button type="button"
+                                            class="btn-action-delete"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteUsahaModal{{ biz.id }}"
+                                            title="Hapus Usaha">
+                                        <i class="bi bi-trash"></i> Hapus
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        {# ── Edit Business Modal (Functional Form) ── #}
+                        <div class="modal fade" id="editUsahaModal{{ biz.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-dark">
+                                            <i class="bi bi-pencil-square text-primary me-2"></i>Edit Data Usaha
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form action="{{ url_for('usaha.edit_usaha', business_id=biz.id) }}" method="POST">
+                                        <div class="modal-body py-3">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold small text-secondary">Nama Usaha <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-shop text-muted"></i></span>
+                                                    <input type="text" class="form-control border-start-0 bg-light"
+                                                           name="business_name" value="{{ biz.business_name }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold small text-secondary">Nama Pemilik <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person-badge text-muted"></i></span>
+                                                    <input type="text" class="form-control border-start-0 bg-light"
+                                                           name="owner_name" value="{{ biz.owner_name }}" required>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold small text-secondary">Bidang Usaha <span class="text-danger">*</span></label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
+                                                    <select class="form-select border-start-0 bg-light" name="bidang_usaha" required>
+                                                        <option value="" disabled {% if not biz.bidang_usaha %}selected{% endif %}>-- Pilih Bidang Usaha --</option>
+                                                        {% for pilihan in bidang_usaha_choices %}
+                                                        <option value="{{ pilihan }}" {% if biz.bidang_usaha == pilihan %}selected{% endif %}>
+                                                            {{ pilihan }}
+                                                        </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold small text-secondary">Telepon / WhatsApp</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-whatsapp text-muted"></i></span>
+                                                    <input type="text" class="form-control border-start-0 bg-light"
+                                                           name="phone" value="{{ biz.phone or '' }}" placeholder="Contoh: 081234567890">
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold small text-secondary">Alamat Usaha</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text bg-light border-end-0 align-items-start pt-2"><i class="bi bi-geo-alt text-muted"></i></span>
+                                                    <textarea class="form-control border-start-0 bg-light" name="address" rows="2"
+                                                              placeholder="Alamat usaha">{{ biz.address or '' }}</textarea>
+                                                </div>
+                                            </div>
+
+                                            {# ── Certification Chips in Edit Modal ── #}
+                                            <div class="mb-1">
+                                                <label class="form-label fw-semibold small text-secondary">
+                                                    <i class="bi bi-patch-check me-1"></i> Sertifikasi
+                                                </label>
+                                                <div class="cert-chips-wrapper-modal" data-modal-id="{{ biz.id }}">
+                                                    {% for sert in sertifikasi_list %}
+                                                    {% set has_val = biz.__getattribute__('has_' ~ sert.key) %}
+                                                    <span class="cert-chip-modal {% if has_val %}active{% endif %}"
+                                                          data-cert-key="{{ sert.key }}"
+                                                          data-modal-id="{{ biz.id }}">
+                                                        <i class="bi bi-check-lg cert-check-icon"></i>
+                                                        {{ sert.label }}
+                                                    </span>
+                                                    {% endfor %}
+                                                </div>
+
+                                                {% for sert in sertifikasi_list %}
+                                                {% set has_val = biz.__getattribute__('has_' ~ sert.key) %}
+                                                {% set num_val = biz.__getattribute__(sert.key ~ '_number') or '' %}
+                                                <input type="hidden"
+                                                       name="has_{{ sert.key }}"
+                                                       id="edit-has-{{ sert.key }}-{{ biz.id }}"
+                                                       value="{{ '1' if has_val else '0' }}">
+
+                                                <div class="cert-number-field-modal {% if has_val %}visible{% endif %}"
+                                                     id="edit-field-{{ sert.key }}-{{ biz.id }}">
+                                                    <label class="form-label fw-semibold small text-secondary">
+                                                        Nomor Sertifikat {{ sert.label }}
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light border-end-0">
+                                                            <i class="bi bi-file-earmark-text text-muted"></i>
+                                                        </span>
+                                                        <input type="text" class="form-control border-start-0 bg-light"
+                                                               id="edit-num-{{ sert.key }}-{{ biz.id }}"
+                                                               name="{{ sert.key }}_number"
+                                                               value="{{ num_val }}"
+                                                               placeholder="Nomor sertifikat {{ sert.label }}">
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 pt-0">
+                                            <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                                            <button type="submit" class="btn btn-primary-custom rounded-3 fw-bold px-4">
+                                                <i class="bi bi-check-circle me-1"></i> Simpan Perubahan
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ── Delete Business Modal (UI view) ── #}
+                        <div class="modal fade" id="deleteUsahaModal{{ biz.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content rounded-4 border-0 shadow">
+                                    <div class="modal-header border-bottom-0 pb-0">
+                                        <h5 class="modal-title fw-bold text-danger">
+                                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Konfirmasi Hapus Usaha
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body py-3">
+                                        <p class="mb-0">Apakah Anda yakin ingin menghapus data usaha <strong>"{{ biz.business_name }}"</strong>?</p>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0">
+                                        <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                                        <button type="button" class="btn btn-danger rounded-3 fw-bold" data-bs-dismiss="modal">Hapus</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-5 text-muted">
+                                <i class="bi bi-shop fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                Belum ada usaha terdaftar. Silakan tambah usaha baru.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# ── Bottom Right Action Button: Tambah Usaha Baru ── #}
+    <div class="pengaturan-footer-actions">
+        <a href="{{ url_for('usaha.tambah_usaha') }}" class="btn-add-usaha-new">
+            <i class="bi bi-plus-lg fs-5"></i> Tambah Usaha Baru
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    // Toggle chip selection in Edit modals
+    document.querySelectorAll('.cert-chip-modal').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            var key = this.dataset.certKey;
+            var modalId = this.dataset.modalId;
+            var hiddenInput = document.getElementById('edit-has-' + key + '-' + modalId);
+            var fieldWrapper = document.getElementById('edit-field-' + key + '-' + modalId);
+            var numberInput = document.getElementById('edit-num-' + key + '-' + modalId);
+            var isActive = this.classList.contains('active');
+
+            if (isActive) {
+                this.classList.remove('active');
+                hiddenInput.value = '0';
+                fieldWrapper.classList.remove('visible');
+                numberInput.value = '';
+            } else {
+                this.classList.add('active');
+                hiddenInput.value = '1';
+                fieldWrapper.classList.add('visible');
+                setTimeout(function () {
+                    numberInput.focus();
+                }, 300);
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

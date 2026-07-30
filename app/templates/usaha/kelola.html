@@ -2,110 +2,348 @@
 
 {% block title %}Kelola Usaha - Siwaruk{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ─── Page wrapper: mobile-first max width ─── */
+    .kelola-page {
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    /* ─── Section label "Kelola" ─── */
+    .kelola-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.4rem;
+        padding-left: 0.2rem;
+    }
+
+    /* ─── Business Selector Pill ─── */
+    .biz-selector-pill {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #ffffff;
+        border: 2px solid #0F172A;
+        border-radius: 50rem;
+        padding: 0.8rem 1.4rem;
+        cursor: pointer;
+        user-select: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        position: relative;
+    }
+
+    .biz-selector-pill:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(47, 116, 181, 0.15);
+    }
+
+    .biz-selector-pill .pill-name {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #000000;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .biz-selector-pill .pill-chevron {
+        font-size: 1.1rem;
+        color: #000000;
+        flex-shrink: 0;
+        margin-left: 0.5rem;
+        transition: transform 0.25s ease;
+    }
+
+    .biz-selector-pill.open .pill-chevron {
+        transform: rotate(180deg);
+    }
+
+    /* ─── Dropdown panel ─── */
+    .biz-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 2px solid #0F172A;
+        border-radius: 1rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        z-index: 300;
+        overflow: hidden;
+    }
+
+    .biz-dropdown.show { display: block; }
+
+    .biz-drop-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.85rem 1.1rem;
+        text-decoration: none;
+        color: #1E293B;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border-bottom: 1px solid #E2E8F0;
+        transition: background 0.14s;
+    }
+
+    .biz-drop-item:last-child { border-bottom: none; }
+    .biz-drop-item:hover { background: #EBF6FF; color: var(--primary-color); }
+
+    .biz-drop-item.active-biz { background: #EBF6FF; color: var(--primary-color); }
+
+    .biz-drop-icon {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: var(--nav-bg);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 0.9rem; flex-shrink: 0;
+    }
+
+    .biz-drop-icon.add-icon {
+        background: #EBF6FF; color: var(--primary-color);
+    }
+
+    /* ─── Menu list container ─── */
+    .menu-list {
+        background: #ffffff;
+        border: 2px solid #0F172A;
+        overflow: hidden;
+        border-radius: 0;
+    }
+
+    /* ─── Each menu row ─── */
+    .menu-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.85rem 1rem;
+        text-decoration: none;
+        color: #000000;
+        cursor: pointer;
+        border-bottom: 1.5px solid #475569;
+        background: #ffffff;
+        transition: background 0.16s ease;
+        -webkit-tap-highlight-color: rgba(47,116,181,0.08);
+    }
+
+    .menu-row:last-child { border-bottom: none; }
+
+    .menu-row:hover {
+        background: #F0F8FF;
+        color: #000000;
+    }
+
+    .menu-row:active {
+        background: #DBEEFF;
+    }
+
+    /* Icon circle — matches reference: solid dark blue/teal circle */
+    .menu-row-icon {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: var(--nav-active);
+        display: flex; align-items: center; justify-content: center;
+        color: #ffffff;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .menu-row-label {
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #000000;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    /* Chevron right arrow indicator */
+    .menu-row-chevron {
+        font-size: 1.3rem;
+        color: #000000;
+        -webkit-text-stroke: 0.5px #000000;
+        flex-shrink: 0;
+        transition: color 0.15s, transform 0.15s;
+    }
+
+    .menu-row:hover .menu-row-chevron {
+        color: var(--primary-color);
+        -webkit-text-stroke: 0.5px var(--primary-color);
+        transform: translateX(3px);
+    }
+
+    /* ─── Selector wrapper needs position:relative ─── */
+    .biz-selector-wrapper { position: relative; }
+
+    /* ─── No-business CTA ─── */
+    .cta-empty {
+        background: #ffffff;
+        border-radius: 1rem;
+        border: 2px dashed var(--card-border);
+        text-align: center;
+        padding: 2.5rem 1.5rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-10 col-lg-8">
+<div class="kelola-page">
 
-        {% if not active_business %}
-        <!-- Warning if no active business -->
-        <div class="card card-custom border-0 shadow-sm p-4 text-center my-4">
-            <div class="py-3">
-                <div class="mb-2 fs-1">🏪</div>
-                <h4 class="fw-bold mb-2">Belum ada usaha aktif yang dipilih</h4>
-                <p class="text-muted small mb-3">Silakan pilih atau tambahkan usaha terlebih dahulu dari Beranda.</p>
-                <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary-custom rounded-pill px-4">
-                    <i class="bi bi-house me-1"></i> Kembali ke Beranda
-                </a>
-            </div>
+    {% if not active_business %}
+    {# ── Empty state ── #}
+    <div class="cta-empty mt-3">
+        <div class="fs-1 mb-3">🏪</div>
+        <h5 class="fw-bold mb-2">Belum ada usaha aktif</h5>
+        <p class="text-muted small mb-4">
+            Tambahkan usaha pertama Anda untuk mulai menggunakan Siwaruk.
+        </p>
+        <a href="{{ url_for('usaha.tambah_usaha') }}"
+           class="btn btn-primary-custom rounded-pill px-5 py-2 fw-semibold">
+            <i class="bi bi-plus-circle me-2"></i> Tambah Usaha
+        </a>
+    </div>
+
+    {% else %}
+
+    {# ── Label ── #}
+    <p class="kelola-label mt-1 mb-2">Kelola</p>
+
+    {# ── Business Selector ── #}
+    {% set all_businesses = current_user.businesses.all() %}
+    <div class="biz-selector-wrapper mb-4" id="bizSelectorWrapper">
+        <div class="biz-selector-pill shadow-sm"
+             id="bizSelectorBtn"
+             role="button"
+             aria-haspopup="listbox"
+             aria-expanded="false">
+            <span class="pill-name">{{ active_business.business_name | upper }}</span>
+            <i class="bi bi-caret-down-fill pill-chevron"></i>
         </div>
-        {% else %}
 
-        <!-- Active Business Banner -->
-        <div class="mb-4">
-            <div class="card card-custom border-0 shadow-sm p-4 bg-white">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="p-3 rounded-circle text-white shadow-sm" style="background-color: var(--primary-color);">
-                            <i class="bi bi-shop fs-3"></i>
-                        </div>
-                        <div>
-                            <small class="text-muted d-block fw-semibold">Usaha Aktif</small>
-                            <h4 class="fw-extrabold text-dark mb-0">{{ active_business.business_name }}</h4>
-                            <small class="text-muted"><i class="bi bi-person me-1"></i> {{ active_business.owner_name }}</small>
-                        </div>
-                    </div>
-                    <div>
-                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                            <i class="bi bi-arrow-repeat me-1"></i> Ganti Usaha
-                        </a>
+        <div class="biz-dropdown" id="bizDropdown" role="listbox">
+            {% for biz in all_businesses %}
+            <a href="{{ url_for('usaha.set_active', business_id=biz.id) }}"
+               class="biz-drop-item {% if biz.id == active_business.id %}active-biz{% endif %}"
+               role="option"
+               aria-selected="{{ 'true' if biz.id == active_business.id else 'false' }}">
+                <div class="biz-drop-icon"><i class="bi bi-shop"></i></div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">{{ biz.business_name }}</div>
+                    <div style="font-size:0.72rem; color:#64748B; font-weight:500;">
+                        {{ biz.owner_name }}
                     </div>
                 </div>
-            </div>
+                {% if biz.id == active_business.id %}
+                <i class="bi bi-check2-circle text-success fs-5 ms-2"></i>
+                {% endif %}
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('usaha.tambah_usaha') }}" class="biz-drop-item">
+                <div class="biz-drop-icon add-icon"><i class="bi bi-plus-lg"></i></div>
+                <span class="fw-bold text-primary">Tambah Usaha Baru</span>
+            </a>
         </div>
+    </div>
 
-        <!-- Kelola Usaha Action Rows (Matching Image 2 Mockup) -->
-        <div class="d-flex flex-column gap-3 mb-4">
+    {# ── Menu List ── #}
+    <div class="menu-list shadow-sm">
 
-            <!-- 1. Pengaturan Usaha -->
-            <div class="card card-custom border-0 shadow-sm overflow-hidden">
-                <a href="#" class="text-decoration-none text-dark p-3 p-md-4 d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" 
-                             style="width: 48px; height: 48px; background-color: var(--primary-color);">
-                            <i class="bi bi-shop fs-4"></i>
-                        </div>
-                        <h5 class="fw-extrabold mb-0">Pengaturan Usaha</h5>
-                    </div>
-                    <i class="bi bi-plus-lg fs-3 text-dark"></i>
-                </a>
+        {# 1. Atur Usaha #}
+        <a href="{{ url_for('usaha.pengaturan') }}"
+           class="menu-row"
+           id="menu-atur-usaha">
+            <div class="d-flex align-items-center gap-3">
+                <div class="menu-row-icon">
+                    <i class="bi bi-shop"></i>
+                </div>
+                <span class="menu-row-label">Atur Usaha</span>
             </div>
+            <i class="bi bi-chevron-right menu-row-chevron"></i>
+        </a>
 
-            <!-- 2. Kelola Produk -->
-            <div class="card card-custom border-0 shadow-sm overflow-hidden">
-                <a href="#" class="text-decoration-none text-dark p-3 p-md-4 d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" 
-                             style="width: 48px; height: 48px; background-color: var(--primary-color);">
-                            <i class="bi bi-shop fs-4"></i>
-                        </div>
-                        <h5 class="fw-extrabold mb-0">Kelola Produk</h5>
-                    </div>
-                    <i class="bi bi-plus-lg fs-3 text-dark"></i>
-                </a>
+        {# 2. Kelola Produk #}
+        <a href="{{ url_for('produk.index') }}"
+           class="menu-row"
+           id="menu-kelola-produk">
+            <div class="d-flex align-items-center gap-3">
+                <div class="menu-row-icon">
+                    <i class="bi bi-bag-fill"></i>
+                </div>
+                <span class="menu-row-label">Kelola Produk</span>
             </div>
+            <i class="bi bi-chevron-right menu-row-chevron"></i>
+        </a>
 
-            <!-- 3. Kelola Transaksi -->
-            <div class="card card-custom border-0 shadow-sm overflow-hidden">
-                <a href="#" class="text-decoration-none text-dark p-3 p-md-4 d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" 
-                             style="width: 48px; height: 48px; background-color: var(--primary-color);">
-                            <i class="bi bi-shop fs-4"></i>
-                        </div>
-                        <h5 class="fw-extrabold mb-0">Kelola Transaksi</h5>
-                    </div>
-                    <i class="bi bi-plus-lg fs-3 text-dark"></i>
-                </a>
+        {# 3. Kelola Transaksi #}
+        <a href="{{ url_for('transaksi.riwayat') }}"
+           class="menu-row"
+           id="menu-kelola-transaksi">
+            <div class="d-flex align-items-center gap-3">
+                <div class="menu-row-icon">
+                    <i class="bi bi-credit-card-fill"></i>
+                </div>
+                <span class="menu-row-label">Kelola Transaksi</span>
             </div>
+            <i class="bi bi-chevron-right menu-row-chevron"></i>
+        </a>
 
-            <!-- 4. Laporan Keuangan -->
-            <div class="card card-custom border-0 shadow-sm overflow-hidden">
-                <a href="#" class="text-decoration-none text-dark p-3 p-md-4 d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" 
-                             style="width: 48px; height: 48px; background-color: var(--primary-color);">
-                            <i class="bi bi-shop fs-4"></i>
-                        </div>
-                        <h5 class="fw-extrabold mb-0">Laporan Keuangan</h5>
-                    </div>
-                    <i class="bi bi-plus-lg fs-3 text-dark"></i>
-                </a>
+        {# 4. Lihat Laporan Keuangan #}
+        <a href="#"
+           class="menu-row"
+           id="menu-laporan-keuangan"
+           onclick="return false;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="menu-row-icon">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                </div>
+                <span class="menu-row-label">Lihat Laporan Keuangan</span>
             </div>
-
-        </div>
-
-        {% endif %}
+            <i class="bi bi-chevron-right menu-row-chevron"></i>
+        </a>
 
     </div>
+
+    {% endif %}
+
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var btn    = document.getElementById('bizSelectorBtn');
+    var panel  = document.getElementById('bizDropdown');
+    var wrap   = document.getElementById('bizSelectorWrapper');
+
+    if (!btn || !panel) return;
+
+    function open() {
+        panel.classList.add('show');
+        btn.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+    }
+    function close() {
+        panel.classList.remove('show');
+        btn.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+    }
+
+    btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        panel.classList.contains('show') ? close() : open();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (wrap && !wrap.contains(e.target)) close();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') close();
+    });
+})();
+</script>
 {% endblock %}
