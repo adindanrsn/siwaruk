@@ -266,6 +266,28 @@
         text-align: center;
     }
 
+    .cart-item-qty-input {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #0F172A;
+        width: 42px;
+        text-align: center;
+        border: 1px solid #CBD5E1;
+        border-radius: 0.35rem;
+        padding: 0.15rem 0.2rem;
+        background: #ffffff;
+    }
+
+    .cart-item-qty-input::-webkit-inner-spin-button,
+    .cart-item-qty-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .cart-item-qty-input[type=number] {
+        -moz-appearance: textfield;
+    }
+
     .cart-item-subtotal {
         font-size: 0.82rem;
         font-weight: 700;
@@ -434,7 +456,8 @@
                              data-id="{{ p.id }}"
                              data-name="{{ p.name | e }}"
                              data-price="{{ p.selling_price }}"
-                             data-cat-id="{{ p.category_id or '' }}">
+                             data-cat-id="{{ p.category_id or '' }}"
+                             data-stock="{{ p.stock if p.stock is not none else 'null' }}">
 
                             <div>
                                 <div class="prod-name">{{ p.name }}</div>
@@ -450,7 +473,9 @@
                                     </span>
                                     <span class="prod-stock-label">
                                         {% if p.stock is not none %}
-                                            {% if p.stock <= 5 %}
+                                            {% if p.stock <= 0 %}
+                                                <span class="badge bg-danger rounded-pill px-2">Stok Habis</span>
+                                            {% elif p.stock <= 5 %}
                                                 <span class="text-warning fw-bold">⚠ {{ p.stock }}</span>
                                             {% else %}
                                                 Stok: {{ p.stock }}
@@ -460,9 +485,20 @@
                                         {% endif %}
                                     </span>
                                 </div>
-                                <button type="button" class="btn-add-cart btnAddToCart">
-                                    <i class="bi bi-plus-lg"></i> Tambah
-                                </button>
+                                {% if p.stock is not none and p.stock <= 0 %}
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn-add-cart btnAddToCart flex-grow-1" disabled style="opacity:0.5; cursor:not-allowed;">
+                                            <i class="bi bi-plus-lg"></i> Tambah
+                                        </button>
+                                        <button type="button" class="btn-add-cart btnRestock flex-grow-1" style="background:#F1F5F9; color:#334155; border:1px solid #CBD5E1;">
+                                            <i class="bi bi-box-seam"></i> Restock
+                                        </button>
+                                    </div>
+                                {% else %}
+                                    <button type="button" class="btn-add-cart btnAddToCart">
+                                        <i class="bi bi-plus-lg"></i> Tambah
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}
@@ -556,6 +592,39 @@
     </div>
 </div>
 
+{# Quick Restock Modal #}
+<div class="modal fade" id="modalQuickRestock" tabindex="-1" aria-labelledby="modalQuickRestockLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold" id="modalQuickRestockLabel">Quick Restock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4">
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Produk</label>
+                    <div id="qrProductName" class="fw-bold fs-5 text-dark">Nama Produk</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-muted small fw-bold mb-1">Stok Saat Ini</label>
+                    <div id="qrCurrentStock" class="fw-bold text-danger fs-5">0</div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label text-muted small fw-bold mb-1">Tambah Stok</label>
+                    <input type="number" class="form-control" id="qrAddStock" min="1" placeholder="Masukkan jumlah stok tambahan..." required>
+                    <div class="invalid-feedback" id="qrErrorMsg">Jumlah wajib diisi dan lebih dari 0.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2">
+                <button type="button" class="btn btn-outline-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary rounded-3 px-4 fw-bold" id="btnSaveRestock">
+                    <i class="bi bi-check-circle me-1"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {# Toast Notification #}
 <div class="pos-toast" id="posToast" style="display:none;">
     <div class="alert alert-success alert-dismissible shadow-sm d-flex align-items-center gap-2 mb-0 rounded-3"
@@ -640,10 +709,17 @@
         var price = parseFloat(card.dataset.price);
 
         var existing = cart.find(function (i) { return i.product_id === id; });
+        var stock = card.dataset.stock !== 'null' ? parseInt(card.dataset.stock) : null;
+
         if (existing) {
+            if (stock !== null && existing.quantity >= stock) {
+                alert('Jumlah melebihi stok yang tersedia.');
+                return;
+            }
             existing.quantity += 1;
         } else {
-            cart.push({ product_id: id, name: name, price: price, quantity: 1 });
+            if (stock !== null && stock <= 0) return;
+            cart.push({ product_id: id, name: name, price: price, quantity: 1, stock: stock });
         }
 
         /* flash animation on card */
@@ -679,6 +755,9 @@
             grandTotal += sub;
             totalQty   += item.quantity;
 
+            var plusDisabled = (item.stock !== null && item.quantity >= item.stock) ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : '';
+            var maxAttr = (item.stock !== null) ? 'max="' + item.stock + '"' : '';
+
             var row = document.createElement('div');
             row.className = 'cart-item';
             row.innerHTML =
@@ -690,8 +769,8 @@
                 /* right: [−] qty [+] subtotal */
                 '<div class="cart-item-controls">' +
                     '<button type="button" class="btn-qty btnMinus" data-idx="' + idx + '">−</button>' +
-                    '<span class="cart-item-qty">' + item.quantity + '</span>' +
-                    '<button type="button" class="btn-qty btnPlus" data-idx="' + idx + '">+</button>' +
+                    '<input type="number" min="1" ' + maxAttr + ' class="cart-item-qty-input btnQtyInput" data-idx="' + idx + '" value="' + item.quantity + '">' +
+                    '<button type="button" class="btn-qty btnPlus" data-idx="' + idx + '" ' + plusDisabled + '>+</button>' +
                     '<span class="cart-item-subtotal">Rp ' + fmtNum(sub) + '</span>' +
                 '</div>';
 
@@ -701,6 +780,23 @@
         cartTotalText.textContent = 'Rp ' + fmtNum(grandTotal);
         cartCountBadge.textContent = totalQty;
         cartCountBadge.style.display = '';
+    }
+
+    function updateCartTotalsOnly() {
+        var grandTotal = 0;
+        var totalQty = 0;
+        var rows = cartItemsList.querySelectorAll('.cart-item');
+        rows.forEach(function (row, idx) {
+            var item = cart[idx];
+            if (!item) return;
+            var sub = item.price * item.quantity;
+            grandTotal += sub;
+            totalQty += item.quantity;
+            var subEl = row.querySelector('.cart-item-subtotal');
+            if (subEl) subEl.textContent = 'Rp ' + fmtNum(sub);
+        });
+        cartTotalText.textContent = 'Rp ' + fmtNum(grandTotal);
+        cartCountBadge.textContent = totalQty;
     }
 
     /* ─── 5. CART QUANTITY CONTROLS ─────────────── */
@@ -715,7 +811,44 @@
             renderCart();
         } else if (plus) {
             var j = parseInt(plus.dataset.idx);
-            cart[j].quantity += 1;
+            var it = cart[j];
+            if (it.stock !== null && it.quantity >= it.stock) {
+                alert('Jumlah melebihi stok yang tersedia.');
+            } else {
+                it.quantity += 1;
+                renderCart();
+            }
+        }
+    });
+
+    cartItemsList.addEventListener('input', function (e) {
+        var input = e.target.closest('.btnQtyInput');
+        if (!input) return;
+        var idx = parseInt(input.dataset.idx);
+        var val = parseInt(input.value);
+        var it = cart[idx];
+        if (!isNaN(val) && val >= 1) {
+            if (it.stock !== null && val > it.stock) {
+                alert('Jumlah melebihi stok yang tersedia.');
+                val = it.stock;
+                input.value = val;
+            }
+            it.quantity = val;
+            updateCartTotalsOnly();
+        }
+    });
+
+    cartItemsList.addEventListener('change', function (e) {
+        var input = e.target.closest('.btnQtyInput');
+        if (!input) return;
+        var idx = parseInt(input.dataset.idx);
+        var val = parseInt(input.value);
+        var it = cart[idx];
+        if (isNaN(val) || val < 1) {
+            it.quantity = 1;
+            renderCart();
+        } else if (it.stock !== null && val > it.stock) {
+            it.quantity = it.stock;
             renderCart();
         }
     });
@@ -803,6 +936,101 @@
 
     /* Init */
     renderCart();
+
+    /* ─── 8. QUICK RESTOCK ──────────────────────── */
+    var restockModal    = new bootstrap.Modal(document.getElementById('modalQuickRestock'));
+    var restockUrl      = "{{ url_for('transaksi.quick_restock', id=0) }}".replace('/0', '/');
+    var activeRestockId = null;
+
+    /* Open modal when Restock button is clicked */
+    productGrid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.btnRestock');
+        if (!btn) return;
+
+        var card       = btn.closest('.prod-card');
+        activeRestockId = parseInt(card.dataset.id);
+        var name        = card.dataset.name;
+        var stock       = parseInt(card.dataset.stock);
+
+        document.getElementById('qrProductName').textContent  = name;
+        document.getElementById('qrCurrentStock').textContent = stock;
+        document.getElementById('qrAddStock').value           = '';
+        document.getElementById('qrAddStock').classList.remove('is-invalid');
+
+        restockModal.show();
+    });
+
+    /* Clear error on input */
+    document.getElementById('qrAddStock').addEventListener('input', function () {
+        this.classList.remove('is-invalid');
+    });
+
+    /* Save Restock */
+    document.getElementById('btnSaveRestock').addEventListener('click', function () {
+        var input  = document.getElementById('qrAddStock');
+        var val    = parseInt(input.value);
+
+        if (!input.value.trim() || isNaN(val) || val <= 0) {
+            input.classList.add('is-invalid');
+            return;
+        }
+
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...';
+
+        fetch(restockUrl + activeRestockId, {
+            method : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body   : JSON.stringify({ add_stock: val })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Simpan';
+
+            if (!data.success) {
+                input.classList.add('is-invalid');
+                document.getElementById('qrErrorMsg').textContent = data.message || 'Terjadi kesalahan.';
+                return;
+            }
+
+            /* Update the product card DOM in-place */
+            var newStock = data.new_stock;
+            var card = productGrid.querySelector('.prod-card[data-id="' + activeRestockId + '"]');
+            if (card) {
+                card.dataset.stock = newStock;
+
+                /* Update stock label */
+                var stockLabel = card.querySelector('.prod-stock-label');
+                if (stockLabel) {
+                    if (newStock <= 0) {
+                        stockLabel.innerHTML = '<span class="badge bg-danger rounded-pill px-2">Stok Habis</span>';
+                    } else if (newStock <= 5) {
+                        stockLabel.innerHTML = '<span class="text-warning fw-bold">⚠ ' + newStock + '</span>';
+                    } else {
+                        stockLabel.innerHTML = 'Stok: ' + newStock;
+                    }
+                }
+
+                /* Replace button area: remove Restock, enable Tambah */
+                var btnArea = card.querySelector('.btn-add-cart').parentElement;
+                btnArea.innerHTML =
+                    '<button type="button" class="btn-add-cart btnAddToCart">' +
+                        '<i class="bi bi-plus-lg"></i> Tambah' +
+                    '</button>';
+            }
+
+            restockModal.hide();
+            showToast('Stok berhasil ditambahkan.');
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Simpan';
+            input.classList.add('is-invalid');
+            document.getElementById('qrErrorMsg').textContent = 'Terjadi kesalahan jaringan. Coba lagi.';
+        });
+    });
 
 })();
 </script>

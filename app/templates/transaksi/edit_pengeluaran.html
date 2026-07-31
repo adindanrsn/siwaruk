@@ -121,18 +121,17 @@
                         Jumlah <span class="text-danger">*</span>
                     </label>
                     <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0">
-                            <i class="bi bi-box text-muted"></i>
-                        </span>
+                        <button class="btn btn-outline-secondary px-3 fw-bold" type="button" id="btnMinusQty">−</button>
                         <input type="number"
                                step="any"
                                min="0.01"
-                               class="form-control border-start-0 bg-light"
+                               class="form-control text-center bg-light fw-bold"
                                id="quantity"
                                name="quantity"
                                value="{{ form_values.get('quantity', expense.quantity if expense.quantity is not none else '1') }}"
                                placeholder="1"
                                required>
+                        <button class="btn btn-outline-secondary px-3 fw-bold" type="button" id="btnPlusQty">+</button>
                     </div>
                 </div>
                 <div class="col-6">
@@ -208,4 +207,33 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+    var qtyInput = document.getElementById('quantity');
+    var btnMinus = document.getElementById('btnMinusQty');
+    var btnPlus  = document.getElementById('btnPlusQty');
+
+    if (qtyInput && btnMinus && btnPlus) {
+        btnMinus.addEventListener('click', function () {
+            var val = parseFloat(qtyInput.value) || 1;
+            if (val > 1) {
+                qtyInput.value = val - 1;
+            }
+        });
+        btnPlus.addEventListener('click', function () {
+            var val = parseFloat(qtyInput.value) || 0;
+            qtyInput.value = val + 1;
+        });
+        qtyInput.addEventListener('input', function () {
+            if (qtyInput.value !== '' && parseFloat(qtyInput.value) < 0.01) {
+                qtyInput.value = 0.01;
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

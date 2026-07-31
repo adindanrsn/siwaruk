@@ -148,6 +148,19 @@
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'usaha.kelola' %}active{% endif %}">
                     Kelola Usaha
                 </a>
+                
+                <div class="nav-item dropdown flex-fill flex-md-grow-0 text-center">
+                    <a class="nav-link-item w-100 dropdown-toggle {% if 'transaksi' in request.endpoint %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Kelola Transaksi
+                    </a>
+                    <ul class="dropdown-menu shadow border-0 mt-0" style="border-radius: 0.5rem;">
+                        <li><a class="dropdown-item py-2 fw-semibold" href="{{ url_for('transaksi.pemasukan') }}"><i class="bi bi-box-arrow-in-down me-2 text-success"></i>Pemasukan</a></li>
+                        <li><a class="dropdown-item py-2 fw-semibold" href="{{ url_for('transaksi.pengeluaran') }}"><i class="bi bi-box-arrow-up me-2 text-danger"></i>Pengeluaran</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item py-2 text-secondary" href="{{ url_for('transaksi.riwayat') }}"><i class="bi bi-clock-history me-2"></i>Riwayat Transaksi</a></li>
+                    </ul>
+                </div>
+
                 <a href="{{ url_for('auth.profil') }}" 
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'auth.profil' %}active{% endif %}">
                     Profil Saya

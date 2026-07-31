@@ -127,7 +127,7 @@
                         </div>
                     </div>
 
-                    <form action="{{ url_for('transaksi.pengeluaran') }}" method="POST" novalidate>
+                    <form action="{{ url_for('transaksi.tambah_pengeluaran') }}" method="POST" novalidate>
 
                         {# 1. Keperluan #}
                         <div class="mb-3">
@@ -180,15 +180,14 @@
                                     Jumlah <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0">
-                                        <i class="bi bi-box text-muted"></i>
-                                    </span>
+                                    <button class="btn btn-outline-secondary px-3 fw-bold" type="button" id="btnMinusQty">−</button>
                                     <input type="number"
                                            step="any" min="0.01"
-                                           class="form-control border-start-0 bg-light"
+                                           class="form-control text-center bg-light fw-bold"
                                            id="quantity" name="quantity"
                                            value="{{ form_values.get('quantity', '1') }}"
                                            placeholder="1" required>
+                                    <button class="btn btn-outline-secondary px-3 fw-bold" type="button" id="btnPlusQty">+</button>
                                 </div>
                             </div>
                             <div class="col-6">
@@ -276,22 +275,30 @@
                         </span>
                     </div>
 
-                    {# Search Bar #}
+                    {# Search Bar & Filter #}
                     <div class="p-3 border-bottom bg-light">
-                        <form method="GET" action="{{ url_for('transaksi.pengeluaran') }}" class="d-flex gap-2">
-                            <div class="input-group">
+                        <form method="GET" action="{{ url_for('transaksi.pengeluaran') }}" class="d-flex gap-2 flex-wrap">
+                            <div class="input-group" style="flex: 1; min-width: 200px;">
                                 <span class="input-group-text bg-white border-end-0">
                                     <i class="bi bi-search text-muted"></i>
                                 </span>
                                 <input type="text" name="search"
                                        class="form-control border-start-0 bg-white"
-                                       placeholder="Cari keperluan atau kategori..."
+                                       placeholder="Cari keperluan..."
                                        value="{{ search_exp }}">
                             </div>
+                            
+                            <select name="category" class="form-select border-1" style="width: auto;">
+                                <option value="">Semua Kategori</option>
+                                {% for cat in expense_categories %}
+                                <option value="{{ cat }}" {% if filter_cat == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+
                             <button type="submit" class="btn btn-primary-custom px-3 rounded-3">
-                                <i class="bi bi-search"></i>
+                                Terapkan
                             </button>
-                            {% if search_exp %}
+                            {% if search_exp or filter_cat %}
                             <a href="{{ url_for('transaksi.pengeluaran') }}"
                                class="btn btn-outline-secondary rounded-3 px-3" title="Reset pencarian">
                                 <i class="bi bi-x-lg"></i>
@@ -305,11 +312,13 @@
                         <table class="riwayat-table">
                             <thead>
                                 <tr>
-                                    <th style="width:22%;">Tanggal</th>
-                                    <th style="width:22%;">No. Transaksi</th>
-                                    <th style="width:18%;">Kategori</th>
-                                    <th style="width:18%;">Total</th>
-                                    <th style="width:20%; text-align:center;">Aksi</th>
+                                    <th style="width:12%;">Tanggal</th>
+                                    <th style="width:20%;">Keperluan</th>
+                                    <th style="width:15%;">Kategori</th>
+                                    <th style="width:10%;">Kuantitas</th>
+                                    <th style="width:10%;">Satuan</th>
+                                    <th style="width:18%; text-align:right;">Total Pengeluaran</th>
+                                    <th style="width:15%; text-align:center;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -319,16 +328,16 @@
                                         {# Tanggal #}
                                         <td>
                                             <span class="text-dark d-block small fw-semibold">
-                                                {{ exp.expense_date.strftime('%d/%m/%Y') }}
+                                                {{ (exp.expense_date | to_wib).strftime('%d/%m/%Y') if (exp.expense_date | to_wib) else exp.expense_date.strftime('%d/%m/%Y') }}
                                             </span>
                                             <small class="text-muted" style="font-size:0.73rem;">
-                                                {{ exp.expense_date.strftime('%H:%M') }} WIB
+                                                {{ (exp.expense_date | to_wib).strftime('%H:%M') if (exp.expense_date | to_wib) else exp.expense_date.strftime('%H:%M') }} WIB
                                             </small>
                                         </td>
 
-                                        {# Nomor Transaksi #}
+                                        {# Keperluan #}
                                         <td>
-                                            <span class="fw-bold text-dark small">EXP-{{ '%05d' % exp.id }}</span>
+                                            <span class="fw-bold text-dark small">{{ exp.description }}</span>
                                         </td>
 
                                         {# Kategori #}
@@ -339,11 +348,29 @@
                                                 {{ cat }}
                                             </span>
                                         </td>
+                                        
+                                        {# Kuantitas #}
+                                        <td>
+                                            {% if exp.quantity %}
+                                                {{ "{:g}".format(exp.quantity) }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        
+                                        {# Satuan #}
+                                        <td>
+                                            {% if exp.unit %}
+                                                {{ exp.unit }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
 
                                         {# Total #}
-                                        <td>
+                                        <td class="text-end">
                                             <span class="fw-bold text-danger">
-                                                - Rp {{ "{:,.0f}".format(exp.amount).replace(',', '.') }}
+                                                Rp {{ "{:,.0f}".format(exp.amount).replace(',', '.') }}
                                             </span>
                                         </td>
 
@@ -366,9 +393,9 @@
                                                 </a>
 
                                                 {# Hapus Button #}
-                                                <form action="{{ url_for('transaksi.hapus', item_type='pengeluaran', id=exp.id) }}"
+                                                <form action="{{ url_for('transaksi.hapus_pengeluaran', id=exp.id) }}"
                                                       method="POST" class="d-inline"
-                                                      onsubmit="return confirm('Hapus pengeluaran ini?\n\nKeperluan: {{ exp.description }}\nTotal: Rp {{ \"{:,.0f}\".format(exp.amount).replace(\",\", \".\") }}');">
+                                                      onsubmit="return confirm('Apakah Anda yakin ingin menghapus data pengeluaran ini?');">
                                                     <button type="submit"
                                                             class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1"
                                                             title="Hapus">
@@ -381,10 +408,10 @@
                                     {% endfor %}
                                 {% else %}
                                     <tr>
-                                        <td colspan="5" class="text-center py-5 text-muted">
+                                        <td colspan="7" class="text-center py-5 text-muted">
                                             <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
-                                            {% if search_exp %}
-                                                Tidak ada hasil untuk "<strong>{{ search_exp }}</strong>".
+                                            {% if search_exp or filter_cat %}
+                                                Tidak ada hasil pencarian.
                                             {% else %}
                                                 Belum ada transaksi pengeluaran yang dicatat.<br>
                                                 <small>Gunakan form di samping untuk menambahkan pengeluaran pertama.</small>
@@ -516,6 +543,29 @@
                 modalBody.innerHTML = '<p class="text-danger text-center py-3">Terjadi kesalahan jaringan.</p>';
             });
     };
+
+    /* ── QUANTITY STEPPER SYNC ── */
+    var qtyInput = document.getElementById('quantity');
+    var btnMinus = document.getElementById('btnMinusQty');
+    var btnPlus  = document.getElementById('btnPlusQty');
+
+    if (qtyInput && btnMinus && btnPlus) {
+        btnMinus.addEventListener('click', function () {
+            var val = parseFloat(qtyInput.value) || 1;
+            if (val > 1) {
+                qtyInput.value = val - 1;
+            }
+        });
+        btnPlus.addEventListener('click', function () {
+            var val = parseFloat(qtyInput.value) || 0;
+            qtyInput.value = val + 1;
+        });
+        qtyInput.addEventListener('input', function () {
+            if (qtyInput.value !== '' && parseFloat(qtyInput.value) < 0.01) {
+                qtyInput.value = 0.01;
+            }
+        });
+    }
 
 })();
 </script>

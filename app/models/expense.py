@@ -43,6 +43,14 @@ class Expense(BaseModel):
     @purpose.setter
     def purpose(self, val):
         self.description = val
+        
+    @property
+    def category(self):
+        return self.category_name
+        
+    @category.setter
+    def category(self, val):
+        self.category_name = val
 
     @property
     def total_amount(self):
@@ -50,6 +58,14 @@ class Expense(BaseModel):
 
     @total_amount.setter
     def total_amount(self, val):
+        self.amount = val
+        
+    @property
+    def total_expense(self):
+        return self.amount
+        
+    @total_expense.setter
+    def total_expense(self, val):
         self.amount = val
 
     def __repr__(self):

@@ -317,23 +317,33 @@
     {% set total_pemasukan = history_items | selectattr('type','eq','pemasukan') | map(attribute='total') | sum %}
     {% set total_pengeluaran = history_items | selectattr('type','eq','pengeluaran') | map(attribute='total') | sum %}
     {% set net = total_pemasukan - total_pengeluaran %}
+    {% set waktu_label_map = {
+        'hari_ini':   'Hari Ini',
+        'minggu_ini': 'Minggu Ini',
+        'bulan_ini':  'Bulan Ini',
+        'tahun_ini':  'Tahun Ini',
+        'semua':      'Semua Waktu'
+    } %}
+    {% set waktu_label = waktu_label_map.get(waktu_filter, 'Semua Waktu') %}
 
     <div class="summary-cards">
         <div class="summary-card">
             <div class="summary-card-label">
-                <i class="bi bi-arrow-down-left text-success me-1"></i> Total Pemasukan
+                <i class="bi bi-plus-circle-fill text-success me-1"></i> Total Pemasukan
             </div>
             <div class="summary-card-value text-success">
                 Rp {{ "{:,.0f}".format(total_pemasukan).replace(',', '.') }}
             </div>
+            <div class="small text-muted mt-1" style="font-size:0.73rem;">{{ waktu_label }}</div>
         </div>
         <div class="summary-card">
             <div class="summary-card-label">
-                <i class="bi bi-arrow-up-right text-danger me-1"></i> Total Pengeluaran
+                <i class="bi bi-dash-circle-fill text-danger me-1"></i> Total Pengeluaran
             </div>
             <div class="summary-card-value text-danger">
                 Rp {{ "{:,.0f}".format(total_pengeluaran).replace(',', '.') }}
             </div>
+            <div class="small text-muted mt-1" style="font-size:0.73rem;">{{ waktu_label }}</div>
         </div>
         <div class="summary-card">
             <div class="summary-card-label">
@@ -342,6 +352,7 @@
             <div class="summary-card-value {% if net >= 0 %}text-success{% else %}text-danger{% endif %}">
                 {% if net < 0 %}-{% endif %}Rp {{ "{:,.0f}".format(net | abs).replace(',', '.') }}
             </div>
+            <div class="small text-muted mt-1" style="font-size:0.73rem;">{{ waktu_label }}</div>
         </div>
     </div>
 
@@ -349,38 +360,76 @@
        SEARCH & FILTER
     ══════════════════════════════ #}
     <div class="filter-card">
-        <form method="GET" action="{{ url_for('transaksi.riwayat') }}" class="row g-2 align-items-center">
-            <div class="col-12 col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0">
-                        <i class="bi bi-search text-muted small"></i>
-                    </span>
-                    <input type="text"
-                           name="search"
-                           class="form-control border-start-0 bg-light"
-                           placeholder="Cari nomor transaksi atau keperluan..."
-                           value="{{ search }}">
+        <form method="GET" action="{{ url_for('transaksi.riwayat') }}" id="filterForm">
+
+            {# Row 1: Search + Jenis + Submit #}
+            <div class="row g-2 align-items-center mb-3">
+                <div class="col-12 col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-search text-muted small"></i>
+                        </span>
+                        <input type="text"
+                               name="search"
+                               class="form-control border-start-0 bg-light"
+                               placeholder="Cari nomor transaksi atau keperluan..."
+                               value="{{ search }}">
+                    </div>
+                </div>
+                <div class="col-8 col-md-4">
+                    <select name="jenis" class="form-select bg-light" onchange="this.form.submit()">
+                        <option value="semua"      {% if jenis_filter == 'semua'      %}selected{% endif %}>Semua Transaksi</option>
+                        <option value="pemasukan"  {% if jenis_filter == 'pemasukan'  %}selected{% endif %}>🟢 Pemasukan saja</option>
+                        <option value="pengeluaran"{% if jenis_filter == 'pengeluaran'%}selected{% endif %}>🔴 Pengeluaran saja</option>
+                    </select>
+                </div>
+                <div class="col-4 col-md-2 d-grid">
+                    <button type="submit" class="btn btn-primary-custom rounded-3">
+                        <i class="bi bi-search"></i> Cari
+                    </button>
                 </div>
             </div>
-            <div class="col-8 col-md-4">
-                <select name="jenis" class="form-select bg-light" onchange="this.form.submit()">
-                    <option value="semua"      {% if jenis_filter == 'semua'      %}selected{% endif %}>Semua Transaksi</option>
-                    <option value="pemasukan"  {% if jenis_filter == 'pemasukan'  %}selected{% endif %}>🟢 Pemasukan saja</option>
-                    <option value="pengeluaran"{% if jenis_filter == 'pengeluaran'%}selected{% endif %}>🔴 Pengeluaran saja</option>
-                </select>
-            </div>
-            <div class="col-4 col-md-2 d-grid">
-                <button type="submit" class="btn btn-primary-custom rounded-3">
-                    <i class="bi bi-search"></i> Cari
+
+            {# Row 2: Waktu Filter Chips #}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="small fw-semibold text-secondary me-1"
+                      style="white-space:nowrap;">
+                    <i class="bi bi-calendar3 me-1"></i>Periode:
+                </span>
+                {% for val, label in [
+                    ('semua',      'Semua'),
+                    ('hari_ini',   'Hari Ini'),
+                    ('minggu_ini', 'Minggu Ini'),
+                    ('bulan_ini',  'Bulan Ini'),
+                    ('tahun_ini',  'Tahun Ini')
+                ] %}
+                <button type="submit"
+                        name="waktu"
+                        value="{{ val }}"
+                        class="btn btn-sm rounded-pill px-3 py-1
+                               {% if waktu_filter == val %}
+                                   btn-primary
+                               {% else %}
+                                   btn-outline-secondary
+                               {% endif %}"
+                        style="font-size:0.8rem; font-weight:{% if waktu_filter == val %}700{% else %}500{% endif %};"
+                        title="Filter: {{ label }}">
+                    {{ label }}
                 </button>
-            </div>
-            {% if search or jenis_filter != 'semua' %}
-            <div class="col-12 text-end">
-                <a href="{{ url_for('transaksi.riwayat') }}" class="text-decoration-none small text-muted">
-                    <i class="bi bi-x-circle me-1"></i> Reset Filter
+                {% endfor %}
+
+                {# Reset — only shown when any filter is active #}
+                {% if search or jenis_filter != 'semua' or waktu_filter != 'semua' %}
+                <a href="{{ url_for('transaksi.riwayat') }}"
+                   class="btn btn-sm btn-link text-muted text-decoration-none ms-auto"
+                   style="font-size:0.8rem;">
+                    <i class="bi bi-x-circle me-1"></i> Reset
                 </a>
+                {% endif %}
             </div>
-            {% endif %}
+
+            {# Hidden: keep waktu value when jenis dropdown changes #}
+            <input type="hidden" name="waktu" value="{{ waktu_filter }}" id="hiddenWaktu">
         </form>
     </div>
 
@@ -409,9 +458,9 @@
                             <td>
                                 <div class="d-flex align-items-center gap-2">
                                     {% if item.type == 'pemasukan' %}
-                                        <i class="bi bi-arrow-down-left-circle-fill text-success fs-5 flex-shrink-0"></i>
+                                        <i class="bi bi-plus-circle-fill text-success fs-5 flex-shrink-0"></i>
                                     {% else %}
-                                        <i class="bi bi-arrow-up-right-circle-fill text-danger fs-5 flex-shrink-0"></i>
+                                        <i class="bi bi-dash-circle-fill text-danger fs-5 flex-shrink-0"></i>
                                     {% endif %}
                                     <span class="fw-bold text-dark" style="font-size:0.85rem;">
                                         {{ item.transaction_number }}
@@ -439,11 +488,11 @@
                             <td>
                                 {% if item.type == 'pemasukan' %}
                                     <span class="badge-in">
-                                        <i class="bi bi-arrow-down-left"></i> Pemasukan
+                                        <i class="bi bi-plus-lg"></i> Pemasukan
                                     </span>
                                 {% else %}
                                     <span class="badge-out">
-                                        <i class="bi bi-arrow-up-right"></i> Pengeluaran
+                                        <i class="bi bi-dash-lg"></i> Pengeluaran
                                     </span>
                                 {% endif %}
                             </td>
@@ -488,9 +537,15 @@
                                         <button type="button"
                                                 class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1"
                                                 onclick="openSaleDetail({{ item.id }})"
-                                                title="Lihat Detail & Download Nota">
+                                                title="Lihat Detail Transaksi">
                                             <i class="bi bi-eye"></i>
                                         </button>
+                                        {# Preview Nota Button #}
+                                        <a href="{{ url_for('transaksi.preview_nota', id=item.id) }}"
+                                           class="btn btn-sm btn-outline-info rounded-3 px-2 py-1 text-dark"
+                                           title="Preview Nota Kasir">
+                                            <i class="bi bi-receipt-cutoff"></i>
+                                        </a>
                                     {% else %}
                                         {# Detail Button (AJAX) #}
                                         <button type="button"
@@ -639,13 +694,21 @@
             </div>
 
             {# Footer #}
-            <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex justify-content-between">
-                <a href="#"
-                   id="sdDownloadBtn"
-                   class="btn btn-success rounded-3 fw-bold"
-                   title="Download Struk Nota PDF">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Download Nota PDF
-                </a>
+            <div class="modal-footer border-0 px-4 pb-4 pt-2 d-flex justify-content-between flex-wrap gap-2">
+                <div class="d-flex gap-2">
+                    <a href="#"
+                       id="sdPreviewBtn"
+                       class="btn btn-outline-primary rounded-3 fw-bold"
+                       title="Preview Nota Kasir">
+                        <i class="bi bi-receipt-cutoff me-1"></i> Preview Nota
+                    </a>
+                    <a href="#"
+                       id="sdDownloadBtn"
+                       class="btn btn-success rounded-3 fw-bold"
+                       title="Download Struk Nota PDF">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Download Nota PDF
+                    </a>
+                </div>
                 <button type="button" class="btn btn-outline-secondary rounded-3 px-4"
                         data-bs-dismiss="modal">Tutup</button>
             </div>
@@ -668,7 +731,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0"
                          style="width:44px; height:44px; background:#FEF2F2;">
-                        <i class="bi bi-arrow-up-right-circle text-danger fs-4"></i>
+                        <i class="bi bi-dash-circle-fill text-danger fs-4"></i>
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold mb-0" id="modalExpenseDetailLabel">Detail Pengeluaran</h5>
@@ -753,6 +816,7 @@
     var expenseDetailUrl = "{{ url_for('transaksi.detail_pengeluaran', id=0) }}".replace('/0', '/');
     var notaBaseUrl      = "{{ url_for('transaksi.download_nota', id=0) }}".replace('/0', '/');
     var editExpBaseUrl   = "{{ url_for('transaksi.edit_pengeluaran', id=0) }}".replace('/0', '/');
+    var previewNotaBaseUrl = "{{ url_for('transaksi.preview_nota', id=0) }}".replace('/0', '/');
 
     /* ── SALE DETAIL MODAL ── */
     window.openSaleDetail = function (saleId) {
@@ -764,6 +828,7 @@
         content.style.display = 'none';
         document.getElementById('sdModalSubtitle').textContent = '—';
         document.getElementById('sdDownloadBtn').href = notaBaseUrl + saleId;
+        document.getElementById('sdPreviewBtn').href = previewNotaBaseUrl + saleId;
         modal.show();
 
         fetch(saleDetailUrl + saleId)
@@ -865,6 +930,25 @@
         var d = document.createElement('div');
         d.appendChild(document.createTextNode(str));
         return d.innerHTML;
+    }
+
+    /* ── FILTER FORM: prevent duplicate waktu param ───────────────────
+       When a waktu chip is clicked (type=submit, name=waktu),
+       we disable the hidden waktu input so only one value is sent.
+       When the jenis dropdown changes, the hidden input carries the
+       current waktu value correctly.
+    ────────────────────────────────────────────────────────────────── */
+    var filterForm  = document.getElementById('filterForm');
+    var hiddenWaktu = document.getElementById('hiddenWaktu');
+
+    if (filterForm && hiddenWaktu) {
+        var chipBtns = filterForm.querySelectorAll('button[name="waktu"]');
+        chipBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                // Disable the hidden field so only the clicked chip value is submitted
+                hiddenWaktu.disabled = true;
+            });
+        });
     }
 
 })();

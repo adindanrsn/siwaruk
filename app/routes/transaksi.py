@@ -1,6 +1,6 @@
 import io
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_file
 from flask_login import login_required, current_user
 
@@ -17,10 +17,12 @@ from app.utils import get_active_business
 
 # ReportLab imports for Thermal Receipt PDF generation
 from reportlab.lib.pagesizes import mm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, KeepInFrame, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 from reportlab.lib import colors
+from reportlab.graphics.barcode import qr
+from reportlab.graphics.shapes import Drawing
 
 transaksi_bp = Blueprint('transaksi', __name__, url_prefix='/transaksi')
 
@@ -38,12 +40,19 @@ EXPENSE_UNITS = [
     'gram',
     'liter',
     'ml',
+    'pcs',
     'pack',
     'dus',
-    'pcs',
     'orang',
     'ikat',
     'karung',
+    'botol',
+    'kaleng',
+    'lembar',
+    'roll',
+    'sak',
+    'buah',
+    'lusin'
 ]
 
 
@@ -80,30 +89,64 @@ def _generate_invoice_number(business_id):
 def riwayat():
     """
     Combined history of sales (pemasukan) and expenses (pengeluaran) for active business.
+    Supports combined filtering by jenis (type) and waktu (time range).
     """
     active_biz, err_redirect = _check_owner_and_active_biz()
     if err_redirect:
         return err_redirect
 
-    jenis_filter = request.args.get('jenis', 'semua').strip()  # semua, pemasukan, pengeluaran
-    search = request.args.get('search', '').strip()
+    jenis_filter = request.args.get('jenis', 'semua').strip()   # semua | pemasukan | pengeluaran
+    waktu_filter = request.args.get('waktu', 'semua').strip()   # semua | hari_ini | minggu_ini | bulan_ini | tahun_ini
+    search       = request.args.get('search', '').strip()
 
-    # Fetch Sales
+    # ── Compute date range based on waktu filter ──────────────────────────────
+    from zoneinfo import ZoneInfo
+    from datetime import timezone as _tz
+    _WIB = ZoneInfo('Asia/Jakarta')
+
+    now   = datetime.now(_WIB)
+    start = None   # None means no lower bound (semua)
+
+    if waktu_filter == 'hari_ini':
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(_tz.utc).replace(tzinfo=None)
+    elif waktu_filter == 'minggu_ini':
+        # Monday of current week
+        start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(_tz.utc).replace(tzinfo=None)
+    elif waktu_filter == 'bulan_ini':
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(_tz.utc).replace(tzinfo=None)
+    elif waktu_filter == 'tahun_ini':
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0).astimezone(_tz.utc).replace(tzinfo=None)
+    # else 'semua' → start stays None
+
+    # ── Fetch Sales (Pemasukan) ───────────────────────────────────────────────
     sales_query = Sale.query.filter_by(business_id=active_biz.id)
     if search:
         sales_query = sales_query.filter(Sale.invoice_number.ilike(f'%{search}%'))
-    sales = sales_query.all() if jenis_filter in ['semua', 'pemasukan'] else []
+    if start:
+        sales_query = sales_query.filter(Sale.transaction_date >= start)
+    sales = sales_query.order_by(Sale.transaction_date.desc()).all() \
+            if jenis_filter in ['semua', 'pemasukan'] else []
 
-    # Fetch Expenses
+    # ── Fetch Expenses (Pengeluaran) ──────────────────────────────────────────
     exp_query = Expense.query.filter_by(business_id=active_biz.id)
     if search:
         exp_query = exp_query.filter(
             (Expense.description.ilike(f'%{search}%')) |
             (Expense.category_name.ilike(f'%{search}%'))
         )
-    expenses = exp_query.all() if jenis_filter in ['semua', 'pengeluaran'] else []
+    if start:
+        exp_query = exp_query.filter(Expense.expense_date >= start)
+    expenses = exp_query.order_by(Expense.expense_date.desc()).all() \
+               if jenis_filter in ['semua', 'pengeluaran'] else []
 
-    # Combine into unified history item list
+    def _to_wib(dt):
+        if dt is None:
+            return dt
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=_tz.utc)
+        return dt.astimezone(_WIB)
+
+    # ── Combine into unified history list ─────────────────────────────────────
     history_items = []
 
     for s in sales:
@@ -112,7 +155,7 @@ def riwayat():
             'type': 'pemasukan',
             'type_label': 'Pemasukan',
             'transaction_number': s.invoice_number,
-            'date': s.transaction_date,
+            'date': _to_wib(s.transaction_date),
             'total': float(s.total),
             'payment_method': s.payment_method or '-',
             'method_or_category': s.payment_method,
@@ -127,9 +170,9 @@ def riwayat():
             'type': 'pengeluaran',
             'type_label': 'Pengeluaran',
             'transaction_number': f"EXP-{e.id:05d}",
-            'date': e.expense_date,
+            'date': _to_wib(e.expense_date),
             'total': float(e.amount),
-            'payment_method': cat_disp,  # for pengeluaran, show category as "payment method" equivalent
+            'payment_method': cat_disp,
             'method_or_category': cat_disp,
             'details_count': 1,
             'obj': e
@@ -142,6 +185,7 @@ def riwayat():
         'transaksi/riwayat.html',
         history_items=history_items,
         jenis_filter=jenis_filter,
+        waktu_filter=waktu_filter,
         search=search,
         active_business=active_biz
     )
@@ -197,6 +241,11 @@ def pemasukan():
 
                 # Deduct stock if stock is recorded (NOT NULL)
                 if prod.stock is not None:
+                    if prod.stock <= 0:
+                        return jsonify({'success': False, 'message': f'Stok produk "{prod.name}" sudah habis.'}), 400
+                    if prod.stock < qty:
+                        return jsonify({'success': False, 'message': f'Stok produk "{prod.name}" tidak mencukupi (sisa: {prod.stock}).'}), 400
+                    
                     prod.stock -= qty
                     products_to_update.append(prod)
 
@@ -269,114 +318,166 @@ def pemasukan():
         active_business=active_biz
     )
 
+# ─── QUICK RESTOCK ───────────────────────────────────────────────────────────
 
+@transaksi_bp.route('/quick-restock/<int:id>', methods=['POST'])
+@login_required
+def quick_restock(id):
+    active_biz, err_redirect = _check_owner_and_active_biz()
+    if err_redirect:
+        return err_redirect
+        
+    product = Product.query.filter_by(id=id, business_id=active_biz.id).first()
+    if not product:
+        return jsonify({'success': False, 'message': 'Produk tidak ditemukan.'}), 404
+        
+    if product.stock is None:
+        return jsonify({'success': False, 'message': 'Produk ini tidak menggunakan fitur stok.'}), 400
+        
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'success': False, 'message': 'Data tidak valid.'}), 400
+        
+    add_qty = data.get('add_stock')
+    try:
+        add_qty = int(add_qty)
+        if add_qty <= 0:
+            return jsonify({'success': False, 'message': 'Jumlah restock harus lebih dari 0.'}), 400
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Jumlah restock harus berupa angka valid.'}), 400
+        
+    product.stock += add_qty
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Stok berhasil ditambahkan.',
+        'new_stock': product.stock
+    })
 # ─── 3. TRANSAKSI PENGELUARAN ───────────────────────────────────────────────
 
-@transaksi_bp.route('/pengeluaran', methods=['GET', 'POST'])
+@transaksi_bp.route('/pengeluaran/tambah', methods=['POST'])
 @login_required
-def pengeluaran():
+def tambah_pengeluaran():
     """
-    Record an operational expense for active business.
+    Record an operational expense for active business (POST only).
     """
     active_biz, err_redirect = _check_owner_and_active_biz()
     if err_redirect:
         return err_redirect
 
-    if request.method == 'POST':
-        description = request.form.get('description', '').strip()
-        category_name = request.form.get('category_name', '').strip()
-        quantity_raw = request.form.get('quantity', '1').strip()
-        unit = request.form.get('unit', '').strip()
-        amount_raw = request.form.get('amount', '').strip()
-        notes = request.form.get('notes', '').strip()
+    description = request.form.get('description', '').strip()
+    category_name = request.form.get('category_name', '').strip()
+    quantity_raw = request.form.get('quantity', '1').strip()
+    unit = request.form.get('unit', '').strip()
+    amount_raw = request.form.get('amount', '').strip()
+    notes = request.form.get('notes', '').strip()
 
-        errors = []
+    errors = []
 
-        if not description:
-            errors.append('Keperluan pengeluaran wajib diisi.')
+    if not description:
+        errors.append('Keperluan pengeluaran wajib diisi.')
 
-        if not category_name:
-            errors.append('Kategori pengeluaran wajib dipilih.')
+    if not category_name:
+        errors.append('Kategori pengeluaran wajib dipilih.')
 
-        quantity = 1.0
-        if quantity_raw:
-            try:
-                quantity = float(quantity_raw)
-                if quantity <= 0:
-                    errors.append('Jumlah harus lebih dari 0.')
-            except ValueError:
-                errors.append('Jumlah harus berupa angka yang valid.')
-
-        amount = 0.0
-        if not amount_raw:
-            errors.append('Total pengeluaran wajib diisi.')
-        else:
-            try:
-                clean_amount = amount_raw.replace('.', '').replace(',', '.').replace('Rp', '').strip()
-                amount = float(clean_amount)
-                if amount <= 0:
-                    errors.append('Total pengeluaran harus lebih dari 0.')
-            except ValueError:
-                errors.append('Total pengeluaran harus berupa angka yang valid.')
-
-        if errors:
-            for msg in errors:
-                flash(msg, 'danger')
-            search_exp = request.args.get('search', '').strip()
-            expenses_list = Expense.query.filter_by(business_id=active_biz.id).order_by(Expense.expense_date.desc()).all()
-            return render_template(
-                'transaksi/pengeluaran.html',
-                expense_categories=EXPENSE_CATEGORIES,
-                expense_units=EXPENSE_UNITS,
-                form_values=request.form,
-                expenses=expenses_list,
-                search_exp=search_exp,
-                active_business=active_biz
-            )
-
+    quantity = 1.0
+    if quantity_raw:
         try:
-            exp_code = f"EXP-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
-            
-            exp_tx = ExpenseTransaction(
-                business_id=active_biz.id,
-                transaction_code=exp_code,
-                purpose=description,
-                category=category_name,
-                quantity=quantity,
-                unit=unit or None,
-                total_amount=amount,
-                notes=notes or None
-            )
-            db.session.add(exp_tx)
+            quantity = float(quantity_raw)
+            if quantity <= 0:
+                errors.append('Jumlah harus lebih dari 0.')
+        except ValueError:
+            errors.append('Jumlah harus berupa angka yang valid.')
 
-            new_expense = Expense(
-                business_id=active_biz.id,
-                category_name=category_name,
-                description=description,
-                quantity=quantity,
-                unit=unit or None,
-                amount=amount,
-                expense_date=datetime.utcnow(),
-                notes=notes or None
-            )
-            db.session.add(new_expense)
-            db.session.commit()
+    amount = 0.0
+    if not amount_raw:
+        errors.append('Total pengeluaran wajib diisi.')
+    else:
+        try:
+            clean_amount = amount_raw.replace('.', '').replace(',', '.').replace('Rp', '').strip()
+            amount = float(clean_amount)
+            if amount <= 0:
+                errors.append('Total pengeluaran harus lebih dari 0.')
+        except ValueError:
+            errors.append('Total pengeluaran harus berupa angka yang valid.')
 
-            flash('Transaksi pengeluaran berhasil disimpan!', 'success')
-            return redirect(url_for('transaksi.pengeluaran'))
+    if errors:
+        for msg in errors:
+            flash(msg, 'danger')
+        search_exp = request.args.get('search', '').strip()
+        filter_cat = request.args.get('category', '').strip()
+        expenses_list = Expense.query.filter_by(business_id=active_biz.id).order_by(Expense.expense_date.desc()).all()
+        return render_template(
+            'transaksi/pengeluaran.html',
+            expense_categories=EXPENSE_CATEGORIES,
+            expense_units=EXPENSE_UNITS,
+            form_values=request.form,
+            expenses=expenses_list,
+            search_exp=search_exp,
+            filter_cat=filter_cat,
+            active_business=active_biz
+        )
 
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Terjadi kesalahan saat menyimpan pengeluaran: {str(e)}', 'danger')
+    try:
+        exp_code = f"EXP-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{random.randint(1000, 9999)}"
+        
+        exp_tx = ExpenseTransaction(
+            business_id=active_biz.id,
+            transaction_code=exp_code,
+            purpose=description,
+            category=category_name,
+            quantity=quantity,
+            unit=unit or None,
+            total_amount=amount,
+            notes=notes or None
+        )
+        db.session.add(exp_tx)
 
-    # GET: also fetch existing expenses for riwayat table
+        new_expense = Expense(
+            business_id=active_biz.id,
+            category_name=category_name,
+            description=description,
+            quantity=quantity,
+            unit=unit or None,
+            amount=amount,
+            expense_date=datetime.utcnow(),
+            notes=notes or None
+        )
+        db.session.add(new_expense)
+        db.session.commit()
+
+        flash('Transaksi pengeluaran berhasil disimpan!', 'success')
+        return redirect(url_for('transaksi.pengeluaran'))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Terjadi kesalahan saat menyimpan pengeluaran: {str(e)}', 'danger')
+        return redirect(url_for('transaksi.pengeluaran'))
+
+
+@transaksi_bp.route('/pengeluaran', methods=['GET'])
+@login_required
+def pengeluaran():
+    """
+    View operational expenses for active business.
+    """
+    active_biz, err_redirect = _check_owner_and_active_biz()
+    if err_redirect:
+        return err_redirect
+
+    # GET: fetch existing expenses for riwayat table
     search_exp = request.args.get('search', '').strip()
+    filter_cat = request.args.get('category', '').strip()
+    
     exp_query = Expense.query.filter_by(business_id=active_biz.id)
     if search_exp:
         exp_query = exp_query.filter(
-            (Expense.description.ilike(f'%{search_exp}%')) |
-            (Expense.category_name.ilike(f'%{search_exp}%'))
+            (Expense.description.ilike(f'%{search_exp}%'))
         )
+    if filter_cat:
+        exp_query = exp_query.filter(Expense.category_name == filter_cat)
+        
     expenses_list = exp_query.order_by(Expense.expense_date.desc()).all()
 
     return render_template(
@@ -386,11 +487,12 @@ def pengeluaran():
         form_values={},
         expenses=expenses_list,
         search_exp=search_exp,
+        filter_cat=filter_cat,
         active_business=active_biz
     )
 
 
-@transaksi_bp.route('/pengeluaran/edit/<int:id>', methods=['GET', 'POST'])
+@transaksi_bp.route('/pengeluaran/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_pengeluaran(id):
     """
@@ -502,6 +604,10 @@ def detail(id):
     if not sale:
         return jsonify({'success': False, 'message': 'Transaksi tidak ditemukan.'}), 404
 
+    from zoneinfo import ZoneInfo
+    from datetime import timezone as _tz
+    _wib_dt = sale.transaction_date.replace(tzinfo=_tz.utc).astimezone(ZoneInfo('Asia/Jakarta'))
+
     items = []
     for d in sale.sale_details:
         items.append({
@@ -513,14 +619,37 @@ def detail(id):
 
     return jsonify({
         'success': True,
+        'id': sale.id,
+        'business_name': active_biz.business_name,
+        'business_address': active_biz.address or '-',
+        'business_phone': active_biz.phone or '-',
         'invoice_number': sale.invoice_number,
-        'date': sale.transaction_date.strftime('%d/%m/%Y'),
-        'time': sale.transaction_date.strftime('%H:%M'),
+        'date': _wib_dt.strftime('%d/%m/%Y'),
+        'time': _wib_dt.strftime('%H:%M'),
         'payment_method': sale.payment_method,
         'total': float(sale.total),
         'items': items,
         'items_count': len(items)
     })
+
+
+@transaksi_bp.route('/preview-nota/<int:id>', methods=['GET'])
+@login_required
+def preview_nota(id):
+    """
+    Render Preview Nota page for a sale transaction.
+    """
+    active_biz, err_redirect = _check_owner_and_active_biz()
+    if err_redirect:
+        return err_redirect
+
+    sale = Sale.query.filter_by(id=id, business_id=active_biz.id).first_or_404()
+
+    return render_template(
+        'transaksi/preview_nota.html',
+        sale=sale,
+        active_business=active_biz
+    )
 
 
 @transaksi_bp.route('/detail-pengeluaran/<int:id>', methods=['GET'])
@@ -598,27 +727,45 @@ def download_nota(id):
     style_right = ParagraphStyle('Right', parent=styles['Normal'], fontName='Helvetica', fontSize=8, leading=10, alignment=TA_RIGHT)
     style_right_bold = ParagraphStyle('RightBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=11, alignment=TA_RIGHT)
 
+    from zoneinfo import ZoneInfo
+    from datetime import timezone as _tz
+    _wib_dt = sale.transaction_date.replace(tzinfo=_tz.utc).astimezone(ZoneInfo('Asia/Jakarta'))
+
     elements = []
 
     # 1. Header: Business Name & Info
+    if hasattr(active_biz, 'logo') and active_biz.logo:
+        try:
+            import os
+            from flask import current_app
+            logo_val = active_biz.logo
+            if logo_val.startswith('/'):
+                logo_path = os.path.join(current_app.root_path, logo_val.lstrip('/'))
+            else:
+                logo_path = logo_val
+            img = Image(logo_path, width=20*mm, height=20*mm)
+            img.hAlign = 'CENTER'
+            elements.append(img)
+            elements.append(Spacer(1, 2*mm))
+        except Exception:
+            pass
+
     elements.append(Paragraph(active_biz.business_name.upper(), style_center_bold))
-    if active_biz.owner_name:
-        elements.append(Paragraph(f"Pemilik: {active_biz.owner_name}", style_center))
-    if active_biz.phone:
-        elements.append(Paragraph(f"Telp: {active_biz.phone}", style_center))
-    if active_biz.address:
-        elements.append(Paragraph(active_biz.address, style_center))
+    address = active_biz.address if active_biz.address else '-'
+    elements.append(Paragraph(address, style_center))
+    phone = active_biz.phone if active_biz.phone else '-'
+    elements.append(Paragraph(f"WA/Telp: {phone}", style_center))
 
     elements.append(Spacer(1, 4 * mm))
     elements.append(HRFlowable(width="100%", thickness=0.75, color=colors.black, spaceAfter=2*mm))
 
     # 2. Transaction Info
     info_table_data = [
-        [Paragraph("<b>No:</b>", style_left), Paragraph(sale.invoice_number, style_right)],
-        [Paragraph("<b>Tgl:</b>", style_left), Paragraph(sale.transaction_date.strftime('%d/%m/%Y %H:%M'), style_right)],
-        [Paragraph("<b>Metode:</b>", style_left), Paragraph(sale.payment_method, style_right)],
+        [Paragraph("<b>No. Transaksi:</b>", style_left), Paragraph(sale.invoice_number, style_right)],
+        [Paragraph("<b>Tanggal & Jam:</b>", style_left), Paragraph(_wib_dt.strftime('%d/%m/%Y %H:%M WIB'), style_right)],
+        [Paragraph("<b>Metode Pembayaran:</b>", style_left), Paragraph(sale.payment_method, style_right)],
     ]
-    t_info = Table(info_table_data, colWidths=[20*mm, 52*mm])
+    t_info = Table(info_table_data, colWidths=[33*mm, 39*mm])
     t_info.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 1),
@@ -634,7 +781,7 @@ def download_nota(id):
     ]
 
     for detail in sale.sale_details:
-        p_name = detail.product.name if detail.product else 'Produk'
+        p_name = detail.product.name if detail.product else 'Produk Dihapus'
         item_title = Paragraph(f"<b>{p_name}</b>", style_left)
         subtotal_str = f"Rp {int(detail.subtotal):,}".replace(',', '.')
         subtotal_p = Paragraph(f"<b>{subtotal_str}</b>", style_right)
@@ -658,10 +805,10 @@ def download_nota(id):
     # 4. Total Row
     total_formatted = f"Rp {int(sale.total):,}".replace(',', '.')
     tot_table_data = [
-        [Paragraph("<b>TOTAL:</b>", ParagraphStyle('TotL', parent=style_left_bold, fontSize=10)),
-         Paragraph(f"<b>{total_formatted}</b>", ParagraphStyle('TotR', parent=style_right_bold, fontSize=10))]
+        [Paragraph("<b>TOTAL PEMBAYARAN:</b>", ParagraphStyle('TotL', parent=style_left_bold, fontSize=8.5)),
+         Paragraph(f"<b>{total_formatted}</b>", ParagraphStyle('TotR', parent=style_right_bold, fontSize=11))]
     ]
-    t_tot = Table(tot_table_data, colWidths=[30*mm, 42*mm])
+    t_tot = Table(tot_table_data, colWidths=[38*mm, 34*mm])
     t_tot.setStyle(TableStyle([
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
@@ -671,8 +818,22 @@ def download_nota(id):
     elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.gray, spaceAfter=3*mm))
 
     # 5. Footer
-    elements.append(Paragraph("Terima kasih atas kunjungan Anda!", style_center_bold))
-    elements.append(Paragraph("Simpan nota ini sebagai bukti pembayaran.", style_center))
+    elements.append(Paragraph("Terima kasih telah berbelanja.", style_center_bold))
+
+    # 6. QR Code (Optional)
+    try:
+        elements.append(Spacer(1, 4*mm))
+        qr_code = qr.QrCodeWidget(sale.invoice_number)
+        bounds = qr_code.getBounds()
+        w = bounds[2] - bounds[0]
+        h = bounds[3] - bounds[1]
+        size = 22 * mm
+        d = Drawing(size, size, transform=[size/w, 0, 0, size/h, 0, 0])
+        d.add(qr_code)
+        qr_flowable = KeepInFrame(80*mm, size, [d], hAlign='CENTER', vAlign='MIDDLE')
+        elements.append(qr_flowable)
+    except Exception:
+        pass
 
     # Build PDF document
     doc.build(elements)
@@ -707,17 +868,35 @@ def hapus(item_type, id):
             db.session.commit()
             flash(f'Transaksi {inv} berhasil dihapus.', 'success')
             return redirect(url_for('transaksi.riwayat'))
-        elif item_type == 'pengeluaran':
-            expense = Expense.query.filter_by(id=id, business_id=active_biz.id).first_or_404()
-            desc = expense.description
-            db.session.delete(expense)
-            db.session.commit()
-            flash(f'Pengeluaran "{desc}" berhasil dihapus.', 'success')
-            return redirect(url_for('transaksi.pengeluaran'))
         else:
             flash('Jenis transaksi tidak valid.', 'danger')
     except Exception as e:
         db.session.rollback()
         flash(f'Gagal menghapus transaksi: {str(e)}', 'danger')
-
     return redirect(url_for('transaksi.riwayat'))
+
+
+@transaksi_bp.route('/pengeluaran/<int:id>/delete', methods=['POST'])
+@login_required
+def hapus_pengeluaran(id):
+    """
+    Delete an expense transaction for active business.
+    """
+    active_biz, err_redirect = _check_owner_and_active_biz()
+    if err_redirect:
+        return err_redirect
+
+    try:
+        expense = Expense.query.filter_by(id=id, business_id=active_biz.id).first_or_404()
+        desc = expense.description
+        db.session.delete(expense)
+        db.session.commit()
+        flash(f'Pengeluaran "{desc}" berhasil dihapus.', 'success')
+        return redirect(url_for('transaksi.pengeluaran'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Gagal menghapus pengeluaran: {str(e)}', 'danger')
+        return redirect(url_for('transaksi.pengeluaran'))
+
+# ─── 7. LAIN-LAIN ────────────────────────────────────────────────────────
+

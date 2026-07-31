@@ -1,15 +1,32 @@
 from flask import Flask, redirect, url_for, request, flash
 from flask_login import current_user
+from datetime import timezone
+from zoneinfo import ZoneInfo
 
 from config import Config
 from app.extensions import db, login_manager, migrate
 from app.utils import get_whatsapp_link
+
+WIB = ZoneInfo('Asia/Jakarta')
+
+
+def to_wib(dt):
+    """Convert a naive UTC datetime (from DB) to WIB (Asia/Jakarta) datetime."""
+    if dt is None:
+        return dt
+    # DB stores naive datetimes in UTC — attach UTC tzinfo, then convert
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(WIB)
 
 
 def create_app():
     app = Flask(__name__)
 
     app.config.from_object(Config)
+
+    # Register WIB timezone filter for all templates
+    app.jinja_env.filters['to_wib'] = to_wib
 
     # Initialize Extensions
     db.init_app(app)

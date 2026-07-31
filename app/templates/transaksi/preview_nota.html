@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Nota - {{ sale.invoice_number }} - Siwaruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-container {
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .preview-back-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background-color: #ffffff;
+        border: 1px solid var(--card-border);
+        color: #1E293B;
+        text-decoration: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .preview-back-btn:hover {
+        background-color: var(--primary-color);
+        color: #ffffff;
+        border-color: var(--primary-color);
+        transform: translateX(-2px);
+    }
+
+    /* ══════════════════════════════════════
+       RECEIPT THERMAL PAPER CARD
+    ══════════════════════════════════════ */
+    .receipt-paper {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 0.75rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        padding: 1.5rem 1.25rem;
+        font-family: 'Courier New', Courier, monospace, var(--font-family);
+        color: #0F172A;
+        line-height: 1.4;
+    }
+
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .receipt-biz-name {
+        font-size: 1.2rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+
+    .receipt-biz-info {
+        font-size: 0.8rem;
+        color: #475569;
+    }
+
+    .receipt-divider {
+        border-top: 1.5px dashed #64748B;
+        margin: 0.85rem 0;
+    }
+
+    .receipt-info-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.25rem 0.75rem;
+        font-size: 0.82rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .receipt-label {
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .receipt-value {
+        font-weight: 700;
+        text-align: right;
+    }
+
+    .receipt-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+        margin-top: 0.5rem;
+    }
+
+    .receipt-items-table th {
+        text-align: left;
+        border-bottom: 1px dashed #64748B;
+        padding-bottom: 0.4rem;
+        font-weight: 700;
+    }
+
+    .receipt-items-table td {
+        padding: 0.4rem 0;
+        vertical-align: top;
+    }
+
+    .receipt-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.05rem;
+        font-weight: 800;
+        margin-top: 0.5rem;
+    }
+
+    .receipt-footer {
+        text-align: center;
+        font-size: 0.82rem;
+        color: #475569;
+        margin-top: 1rem;
+        font-weight: 600;
+    }
+
+    .preview-action-bar {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    /* ══════════════════════════════════════
+       PRINT STYLES
+    ══════════════════════════════════════ */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .receipt-paper, .receipt-paper * {
+            visibility: visible;
+        }
+        .receipt-paper {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            max-width: 80mm; /* Thermal paper size */
+            margin: 0;
+            padding: 10px;
+            box-shadow: none;
+            border: none;
+        }
+        .preview-action-bar, .preview-header {
+            display: none !important;
+        }
+        @page {
+            margin: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+
+    {# Header #}
+    <div class="preview-header">
+        <a href="{{ url_for('transaksi.riwayat') }}" class="preview-back-btn" title="Kembali ke Riwayat">
+            <i class="bi bi-arrow-left fs-5"></i>
+        </a>
+        <div>
+            <h3 class="fw-bold mb-0" style="font-size:1.4rem; color:#0F172A;">Preview Nota</h3>
+            <span class="text-muted small">No: <strong>{{ sale.invoice_number }}</strong></span>
+        </div>
+    </div>
+
+    {# Receipt Thermal Paper Card #}
+    <div class="receipt-paper">
+
+        {# DATA USAHA #}
+        <div class="receipt-header">
+            {% if active_business.logo %}
+                <img src="{{ active_business.logo }}" alt="Logo" style="max-width: 60px; margin-bottom: 0.5rem;">
+            {% endif %}
+            <div class="receipt-biz-name">{{ active_business.business_name }}</div>
+            <div class="receipt-biz-info">{{ active_business.address or '-' }}</div>
+            <div class="receipt-biz-info">WA/Telp: {{ active_business.phone or '-' }}</div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        {# DATA TRANSAKSI #}
+        <div class="receipt-info-grid">
+            <span class="receipt-label">No. Transaksi</span>
+            <span class="receipt-value">{{ sale.invoice_number }}</span>
+
+            <span class="receipt-label">Tanggal & Jam</span>
+            <span class="receipt-value">{{ (sale.transaction_date | to_wib).strftime('%d/%m/%Y %H:%M WIB') }}</span>
+
+            <span class="receipt-label">Metode Pembayaran</span>
+            <span class="receipt-value">{{ sale.payment_method }}</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        {# DETAIL PEMBELIAN #}
+        <table class="receipt-items-table">
+            <thead>
+                <tr>
+                    <th style="width:50%;">Produk</th>
+                    <th style="width:15%; text-align:center;">Qty</th>
+                    <th style="width:35%; text-align:right;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in sale.sale_details %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ item.product.name if item.product else 'Produk Dihapus' }}</div>
+                        <div style="font-size:0.75rem; color:#64748B;">
+                            @ Rp {{ "{:,.0f}".format(item.selling_price).replace(',', '.') }}
+                        </div>
+                    </td>
+                    <td style="text-align:center; font-weight:700;">
+                        {{ item.quantity }}
+                    </td>
+                    <td style="text-align:right; font-weight:700;">
+                        Rp {{ "{:,.0f}".format(item.subtotal).replace(',', '.') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="receipt-divider"></div>
+
+        {# RINGKASAN TOTAL #}
+        <div class="receipt-total-row">
+            <span style="font-size:1.1rem;">TOTAL PEMBAYARAN:</span>
+            <span style="font-size:1.3rem; font-weight:900;">Rp {{ "{:,.0f}".format(sale.total).replace(',', '.') }}</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        {# FOOTER #}
+        <div class="receipt-footer">
+            <div style="margin-bottom: 0.75rem;">Terima kasih telah berbelanja.</div>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data={{ sale.invoice_number }}" alt="QR Code" width="80" height="80">
+        </div>
+
+    </div>
+
+    {# ACTION BUTTONS #}
+    <div class="preview-action-bar">
+        <a href="{{ url_for('transaksi.riwayat') }}" class="btn btn-outline-secondary rounded-3 py-2 fw-semibold" style="flex: 1 1 auto;">
+            <i class="bi bi-arrow-left me-1"></i> Tutup
+        </a>
+        <button onclick="window.print()" class="btn btn-primary rounded-3 py-2 fw-bold" style="flex: 1 1 auto;">
+            <i class="bi bi-printer me-1"></i> Cetak Nota
+        </button>
+        <a href="{{ url_for('transaksi.download_nota', id=sale.id) }}" class="btn btn-success rounded-3 py-2 fw-bold" style="flex: 1 1 auto;">
+            <i class="bi bi-download me-1"></i> PDF
+        </a>
+    </div>
+
+</div>
+{% endblock %}
