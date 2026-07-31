@@ -318,7 +318,152 @@ def pemasukan():
         active_business=active_biz
     )
 
-# ─── QUICK RESTOCK ───────────────────────────────────────────────────────────
+
+# ─── EDIT TRANSAKSI PEMASUKAN ─────────────────────────────────────────────────
+
+@transaksi_bp.route('/pemasukan/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_pemasukan(id):
+    """
+    Edit an existing sale transaction. On GET, loads the POS kasir UI pre-filled
+    with the existing cart data. On POST (JSON), restores old stock, validates
+    the new cart, applies new stock deductions, and updates the Sale record.
+    """
+    active_biz, err_redirect = _check_owner_and_active_biz()
+    if err_redirect:
+        return err_redirect
+
+    sale = Sale.query.filter_by(id=id, business_id=active_biz.id).first_or_404()
+
+    if request.method == 'POST':
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({'success': False, 'message': 'Data transaksi tidak ditemukan.'}), 400
+
+        cart_items = data.get('items', [])
+        payment_method = data.get('payment_method', '').strip()
+        notes = data.get('notes', '').strip()
+
+        if not cart_items:
+            return jsonify({'success': False, 'message': 'Keranjang transaksi minimal harus berisi 1 produk.'}), 400
+
+        if not payment_method or payment_method not in ['Tunai', 'Non Tunai']:
+            return jsonify({'success': False, 'message': 'Metode pembayaran wajib dipilih (Tunai / Non Tunai).'}), 400
+
+        try:
+            # Step 1: Restore stock for all old sale details (rollback old transaction)
+            for old_detail in sale.sale_details:
+                prod = old_detail.product
+                if prod and prod.stock is not None:
+                    prod.stock += old_detail.quantity
+
+            # Step 2: Delete old sale details
+            for old_detail in list(sale.sale_details):
+                db.session.delete(old_detail)
+
+            # Also delete old SalesTransactionItems linked to the associated SalesTransaction
+            old_sales_tx = SalesTransaction.query.filter_by(
+                transaction_code=sale.invoice_number,
+                business_id=active_biz.id
+            ).first()
+            if old_sales_tx:
+                for old_item in list(old_sales_tx.items):
+                    db.session.delete(old_item)
+
+            db.session.flush()
+
+            # Step 3: Validate and apply new cart
+            total_sale = 0.0
+            new_details = []
+
+            for item in cart_items:
+                product_id = item.get('product_id')
+                qty = int(item.get('quantity', 1))
+                if qty <= 0:
+                    continue
+
+                prod = Product.query.filter_by(id=product_id, business_id=active_biz.id).first()
+                if not prod:
+                    db.session.rollback()
+                    return jsonify({'success': False, 'message': f'Produk ID {product_id} tidak ditemukan.'}), 400
+
+                unit_price = float(prod.selling_price)
+                subtotal = unit_price * qty
+                total_sale += subtotal
+
+                if prod.stock is not None:
+                    if prod.stock < qty:
+                        db.session.rollback()
+                        return jsonify({'success': False,
+                                        'message': f'Stok produk "{prod.name}" tidak mencukupi (tersedia: {prod.stock}).'}), 400
+                    prod.stock -= qty
+
+                new_detail = SaleDetail(
+                    sale_id=sale.id,
+                    product_id=prod.id,
+                    quantity=qty,
+                    selling_price=unit_price,
+                    subtotal=subtotal
+                )
+                db.session.add(new_detail)
+                new_details.append((prod.id, qty, unit_price, subtotal))
+
+                if old_sales_tx:
+                    new_tx_item = SalesTransactionItem(
+                        sales_transaction_id=old_sales_tx.id,
+                        product_id=prod.id,
+                        quantity=qty,
+                        price=unit_price,
+                        subtotal=subtotal
+                    )
+                    db.session.add(new_tx_item)
+
+            # Step 4: Update Sale header
+            sale.total = total_sale
+            sale.payment_method = payment_method
+            sale.notes = notes or None
+
+            if old_sales_tx:
+                old_sales_tx.total_amount = total_sale
+                old_sales_tx.payment_method = payment_method
+
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': f'Transaksi {sale.invoice_number} berhasil diperbarui!',
+                'invoice_number': sale.invoice_number,
+                'redirect_url': url_for('transaksi.riwayat')
+            })
+
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'success': False, 'message': f'Terjadi kesalahan: {str(e)}'}), 500
+
+    # GET: Load existing sale data and render POS UI
+    existing_cart = []
+    for d in sale.sale_details:
+        existing_cart.append({
+            'product_id': d.product_id,
+            'name': d.product.name if d.product else f'Produk #{d.product_id}',
+            'price': float(d.selling_price),
+            'quantity': d.quantity,
+            'stock': d.product.stock if d.product else None,
+        })
+
+    products = Product.query.filter_by(business_id=active_biz.id, is_active=True).order_by(Product.name.asc()).all()
+    categories = Category.query.filter_by(business_id=active_biz.id).order_by(Category.name.asc()).all()
+
+    return render_template(
+        'transaksi/pemasukan.html',
+        products=products,
+        categories=categories,
+        active_business=active_biz,
+        existing_sale=sale,
+        existing_cart=existing_cart
+    )
+
+
 
 @transaksi_bp.route('/quick-restock/<int:id>', methods=['POST'])
 @login_required
@@ -864,9 +1009,22 @@ def hapus(item_type, id):
         if item_type == 'pemasukan':
             sale = Sale.query.filter_by(id=id, business_id=active_biz.id).first_or_404()
             inv = sale.invoice_number
+            
+            # Restore stock
+            for detail in sale.sale_details:
+                prod = detail.product
+                if prod and prod.stock is not None:
+                    prod.stock += detail.quantity
+            
+            # Delete associated SalesTransaction
+            from app.models.sales_transaction import SalesTransaction
+            sales_tx = SalesTransaction.query.filter_by(transaction_code=inv, business_id=active_biz.id).first()
+            if sales_tx:
+                db.session.delete(sales_tx)
+                
             db.session.delete(sale)
             db.session.commit()
-            flash(f'Transaksi {inv} berhasil dihapus.', 'success')
+            flash(f'Transaksi {inv} berhasil dihapus dan stok telah dikembalikan.', 'success')
             return redirect(url_for('transaksi.riwayat'))
         else:
             flash('Jenis transaksi tidak valid.', 'danger')

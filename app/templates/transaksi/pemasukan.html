@@ -399,6 +399,75 @@
         z-index: 9999;
         min-width: 280px;
     }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE MOBILE (BOTTOM BAR & OFFCANVAS)
+    ══════════════════════════════════════ */
+    @media (max-width: 991.98px) {
+        .cart-panel {
+            border: none !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            position: static !important;
+        }
+        .cart-header {
+            display: none !important;
+        }
+        .offcanvas-bottom {
+            height: 85vh !important;
+            border-top-left-radius: 1.2rem;
+            border-top-right-radius: 1.2rem;
+        }
+        .offcanvas-body {
+            padding: 0;
+        }
+    }
+    
+    .mobile-bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #ffffff;
+        border-top: 1px solid #E2E8F0;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+        padding: 0.85rem 1.2rem;
+        z-index: 1040;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .mobile-bottom-bar.show {
+        transform: translateY(0);
+    }
+    .mobile-bottom-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .mobile-bottom-qty {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .mobile-bottom-total {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #059669;
+    }
+    .btn-lihat-pesanan {
+        background-color: #2F74B5;
+        color: #ffffff;
+        font-weight: 700;
+        border-radius: 2rem;
+        padding: 0.5rem 1.2rem;
+        border: none;
+        box-shadow: 0 4px 10px rgba(47,116,181,0.25);
+    }
 </style>
 {% endblock %}
 
@@ -411,8 +480,20 @@
             <i class="bi bi-arrow-left fs-5"></i>
         </a>
         <div>
-            <h3 class="fw-bold mb-0" style="font-size:1.4rem; color:#0F172A;">Kasir Pemasukan</h3>
-            <span class="text-muted small">Usaha: <strong>{{ active_business.business_name }}</strong></span>
+            {% if existing_sale %}
+                <h3 class="fw-bold mb-0" style="font-size:1.4rem; color:#0F172A;">
+                    <span class="badge bg-warning text-dark me-2" style="font-size:0.7rem; vertical-align:middle;">EDIT</span>
+                    Edit Pemasukan
+                </h3>
+                <span class="text-muted small">
+                    No. Transaksi: <strong>{{ existing_sale.invoice_number }}</strong>
+                    &nbsp;·&nbsp;
+                    Usaha: <strong>{{ active_business.business_name }}</strong>
+                </span>
+            {% else %}
+                <h3 class="fw-bold mb-0" style="font-size:1.4rem; color:#0F172A;">Kasir Pemasukan</h3>
+                <span class="text-muted small">Usaha: <strong>{{ active_business.business_name }}</strong></span>
+            {% endif %}
         </div>
     </div>
 
@@ -524,72 +605,96 @@
            KANAN — KERANJANG
         ══════════════════════════════ #}
         <div class="col-12 col-lg-5">
-            <div class="cart-panel">
-
-                {# Cart Header #}
-                <div class="cart-header">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-cart3 text-primary fs-5"></i>
-                        <span class="fw-bold text-dark">Keranjang</span>
-                        <span class="badge bg-primary rounded-pill small" id="cartCountBadge"
-                              style="display:none;">0</span>
-                    </div>
-                    <button type="button"
-                            id="btnClearCart"
-                            class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-semibold"
-                            style="font-size:0.82rem;">
-                        <i class="bi bi-x-circle me-1"></i> Kosongkan
-                    </button>
-                </div>
-
-                {# Cart Items Scroll Area #}
-                <div class="cart-items-scroll" id="cartItemsList">
-                    {# Empty state — shown initially #}
-                    <div class="cart-empty" id="emptyCartMsg">
-                        <i class="bi bi-basket"></i>
-                        <span class="small">Keranjang kosong.<br>Pilih produk dari etalase.</span>
+            <div class="offcanvas-lg offcanvas-bottom shadow-lg-none" tabindex="-1" id="cartOffcanvas" aria-labelledby="cartOffcanvasLabel">
+                <div class="offcanvas-header d-lg-none border-bottom bg-white">
+                    <h5 class="offcanvas-title fw-bold" id="cartOffcanvasLabel"><i class="bi bi-cart3 text-primary me-2"></i>Keranjang</h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <button type="button" id="btnClearCartMobile" class="btn btn-sm btn-outline-danger px-3 rounded-pill fw-semibold" style="font-size:0.8rem;">
+                            Kosongkan
+                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#cartOffcanvas" aria-label="Close"></button>
                     </div>
                 </div>
+                <div class="offcanvas-body p-0 p-lg-0 overflow-visible h-100 flex-column">
+                    <div class="cart-panel w-100 h-100">
 
-                {# Cart Footer #}
-                <div class="cart-footer">
-
-                    {# Total #}
-                    <div class="total-row">
-                        <span class="total-label">Total Pembayaran</span>
-                        <span class="total-amount" id="cartTotalText">Rp 0</span>
-                    </div>
-
-                    {# Payment Method #}
-                    <label class="form-label fw-semibold small text-secondary mb-2">
-                        Metode Pembayaran <span class="text-danger">*</span>
-                    </label>
-                    <div class="payment-options mb-3">
-                        <div class="pay-opt active" id="payTunai" data-method="Tunai">
-                            <i class="bi bi-cash-stack"></i>
-                            Tunai
+                        {# Cart Header (Desktop only due to CSS) #}
+                        <div class="cart-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-cart3 text-primary fs-5"></i>
+                                <span class="fw-bold text-dark">Keranjang</span>
+                                <span class="badge bg-primary rounded-pill small" id="cartCountBadge"
+                                      style="display:none;">0</span>
+                            </div>
+                            <button type="button"
+                                    id="btnClearCart"
+                                    class="btn btn-sm btn-link text-danger text-decoration-none p-0 fw-semibold"
+                                    style="font-size:0.82rem;">
+                                <i class="bi bi-x-circle me-1"></i> Kosongkan
+                            </button>
                         </div>
-                        <div class="pay-opt" id="payNonTunai" data-method="Non Tunai">
-                            <i class="bi bi-qr-code-scan"></i>
-                            Non Tunai
+
+                        {# Cart Items Scroll Area #}
+                        <div class="cart-items-scroll" id="cartItemsList">
+                            {# Empty state — shown initially #}
+                            <div class="cart-empty" id="emptyCartMsg">
+                                <i class="bi bi-basket"></i>
+                                <span class="small">Keranjang kosong.<br>Pilih produk dari etalase.</span>
+                            </div>
+                        </div>
+
+                        {# Cart Footer #}
+                        <div class="cart-footer p-3 border-top mt-auto bg-white" style="border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem;">
+
+                            {# Total #}
+                            <div class="total-row mb-3 d-flex justify-content-between align-items-center">
+                                <span class="total-label fw-bold text-secondary">Total Pembayaran</span>
+                                <span class="total-amount fs-4 fw-bold text-danger" id="cartTotalText">Rp 0</span>
+                            </div>
+
+                            {# Payment Method #}
+                            <label class="form-label fw-semibold small text-secondary mb-2">
+                                Metode Pembayaran <span class="text-danger">*</span>
+                            </label>
+                            <div class="payment-options mb-3 d-flex gap-2">
+                                <div class="pay-opt active flex-fill text-center border rounded p-2" id="payTunai" data-method="Tunai" style="cursor: pointer;">
+                                    <i class="bi bi-cash-stack d-block mb-1"></i>
+                                    <small class="fw-semibold">Tunai</small>
+                                </div>
+                                <div class="pay-opt flex-fill text-center border rounded p-2" id="payNonTunai" data-method="Non Tunai" style="cursor: pointer;">
+                                    <i class="bi bi-qr-code-scan d-block mb-1"></i>
+                                    <small class="fw-semibold">Non Tunai</small>
+                                </div>
+                            </div>
+
+                            {# Alert Box #}
+                            <div id="posAlert" class="alert alert-danger py-2 px-3 small mb-3 d-none"
+                                 role="alert"></div>
+
+                            {# Submit #}
+                            <button type="button" class="btn btn-primary-custom w-100 fw-bold py-2 btn-simpan" id="btnSaveTransaction" style="border-radius: 0.55rem;">
+                                <i class="bi bi-check-circle-fill me-1"></i>
+                                {% if existing_sale %}Perbarui Transaksi{% else %}Simpan Transaksi{% endif %}
+                            </button>
+
                         </div>
                     </div>
-
-                    {# Alert Box #}
-                    <div id="posAlert" class="alert alert-danger py-2 px-3 small mb-3 d-none"
-                         role="alert"></div>
-
-                    {# Submit #}
-                    <button type="button" class="btn-simpan" id="btnSaveTransaction">
-                        <i class="bi bi-check-circle-fill"></i>
-                        Simpan Transaksi
-                    </button>
-
                 </div>
             </div>
         </div>
 
     </div>
+</div>
+
+{# Mobile Bottom Bar #}
+<div id="mobileCartBottomBar" class="mobile-bottom-bar d-lg-none">
+    <div class="mobile-bottom-info">
+        <span class="mobile-bottom-qty"><i class="bi bi-cart3"></i> <span id="mobileCartCountText">0 Item</span></span>
+        <span class="mobile-bottom-total" id="mobileCartTotalText">Rp 0</span>
+    </div>
+    <button class="btn-lihat-pesanan" type="button" data-bs-toggle="offcanvas" data-bs-target="#cartOffcanvas" aria-controls="cartOffcanvas">
+        Lihat Pesanan
+    </button>
 </div>
 
 {# Quick Restock Modal #}
@@ -642,8 +747,20 @@
     'use strict';
 
     /* ─── STATE ─────────────────────────────────── */
-    var cart = [];              // [{ product_id, name, price, quantity }]
+    {% if existing_sale %}
+    /* Edit Mode: pre-populate cart from existing transaction */
+    var _editMode     = true;
+    var _editSaleId   = {{ existing_sale.id }};
+    var _editUrl      = "{{ url_for('transaksi.edit_pemasukan', id=existing_sale.id) }}";
+    var cart          = {{ existing_cart | tojson }};
+    var selectedPayment = "{{ existing_sale.payment_method | default('Tunai') }}";
+    {% else %}
+    var _editMode     = false;
+    var _editSaleId   = null;
+    var _editUrl      = null;
+    var cart = [];
     var selectedPayment = 'Tunai';
+    {% endif %}
 
     /* ─── DOM REFS ──────────────────────────────── */
     var searchInput     = document.getElementById('searchProdInput');
@@ -659,6 +776,12 @@
     var alertBox        = document.getElementById('posAlert');
     var payTunai        = document.getElementById('payTunai');
     var payNonTunai     = document.getElementById('payNonTunai');
+
+    /* Sync payment method UI to loaded selectedPayment */
+    if (selectedPayment === 'Non Tunai') {
+        if (payTunai)    payTunai.classList.remove('active');
+        if (payNonTunai) payNonTunai.classList.add('active');
+    }
 
     /* ─── 1. PAYMENT METHOD ─────────────────────── */
     payTunai.addEventListener('click', function () {
@@ -732,6 +855,22 @@
     });
 
     /* ─── 4. RENDER CART ────────────────────────── */
+    var mobileBottomBar = document.getElementById('mobileCartBottomBar');
+    var mobileCountText = document.getElementById('mobileCartCountText');
+    var mobileTotalText = document.getElementById('mobileCartTotalText');
+    var btnClearCartMobile = document.getElementById('btnClearCartMobile');
+
+    function updateMobileBottomBar(totalAmount, totalItems) {
+        if (!mobileBottomBar) return;
+        if (totalItems > 0) {
+            mobileCountText.textContent = totalItems + ' Item';
+            mobileTotalText.textContent = 'Rp ' + fmtNum(totalAmount);
+            mobileBottomBar.classList.add('show');
+        } else {
+            mobileBottomBar.classList.remove('show');
+        }
+    }
+
     function renderCart() {
         /* clear dynamic items */
         var existingRows = cartItemsList.querySelectorAll('.cart-item');
@@ -742,6 +881,18 @@
             cartTotalText.textContent  = 'Rp 0';
             cartCountBadge.style.display = 'none';
             cartCountBadge.textContent = '0';
+            updateMobileBottomBar(0, 0);
+
+            // Auto close offcanvas on mobile if empty
+            if (window.innerWidth < 992) {
+                var cartOffcanvasEl = document.getElementById('cartOffcanvas');
+                if (cartOffcanvasEl && typeof bootstrap !== 'undefined') {
+                    var bsOffcanvas = bootstrap.Offcanvas.getInstance(cartOffcanvasEl);
+                    if (bsOffcanvas) {
+                        bsOffcanvas.hide();
+                    }
+                }
+            }
             return;
         }
 
@@ -766,12 +917,13 @@
                     '<div class="cart-item-name">' + escHtml(item.name) + '</div>' +
                     '<div class="cart-item-price">Rp ' + fmtNum(item.price) + '</div>' +
                 '</div>' +
-                /* right: [−] qty [+] subtotal */
+                /* right: [−] qty [+] subtotal [del] */
                 '<div class="cart-item-controls">' +
                     '<button type="button" class="btn-qty btnMinus" data-idx="' + idx + '">−</button>' +
                     '<input type="number" min="1" ' + maxAttr + ' class="cart-item-qty-input btnQtyInput" data-idx="' + idx + '" value="' + item.quantity + '">' +
                     '<button type="button" class="btn-qty btnPlus" data-idx="' + idx + '" ' + plusDisabled + '>+</button>' +
                     '<span class="cart-item-subtotal">Rp ' + fmtNum(sub) + '</span>' +
+                    '<button type="button" class="btn btn-link text-danger p-0 ms-1 btnDelete" data-idx="' + idx + '"><i class="bi bi-trash fs-5"></i></button>' +
                 '</div>';
 
             cartItemsList.appendChild(row);
@@ -780,6 +932,7 @@
         cartTotalText.textContent = 'Rp ' + fmtNum(grandTotal);
         cartCountBadge.textContent = totalQty;
         cartCountBadge.style.display = '';
+        updateMobileBottomBar(grandTotal, totalQty);
     }
 
     function updateCartTotalsOnly() {
@@ -797,14 +950,20 @@
         });
         cartTotalText.textContent = 'Rp ' + fmtNum(grandTotal);
         cartCountBadge.textContent = totalQty;
+        updateMobileBottomBar(grandTotal, totalQty);
     }
 
     /* ─── 5. CART QUANTITY CONTROLS ─────────────── */
     cartItemsList.addEventListener('click', function (e) {
         var minus = e.target.closest('.btnMinus');
         var plus  = e.target.closest('.btnPlus');
+        var delBtn = e.target.closest('.btnDelete');
 
-        if (minus) {
+        if (delBtn) {
+            var k = parseInt(delBtn.dataset.idx);
+            cart.splice(k, 1);
+            renderCart();
+        } else if (minus) {
             var i = parseInt(minus.dataset.idx);
             if (cart[i].quantity > 1) { cart[i].quantity -= 1; }
             else                      { cart.splice(i, 1); }
@@ -854,12 +1013,19 @@
     });
 
     /* ─── 6. CLEAR CART ─────────────────────────── */
-    btnClearCart.addEventListener('click', function () {
+    function clearCartAction() {
         if (cart.length === 0) return;
         if (!confirm('Kosongkan seluruh keranjang?')) return;
         cart = [];
         renderCart();
-    });
+    }
+    
+    if (btnClearCart) {
+        btnClearCart.addEventListener('click', clearCartAction);
+    }
+    if (btnClearCartMobile) {
+        btnClearCartMobile.addEventListener('click', clearCartAction);
+    }
 
     /* ─── 7. SAVE TRANSACTION ───────────────────── */
     btnSave.addEventListener('click', function () {
@@ -872,7 +1038,9 @@
 
         setBtnLoading(true);
 
-        fetch("{{ url_for('transaksi.pemasukan') }}", {
+        var fetchUrl = _editMode ? _editUrl : "{{ url_for('transaksi.pemasukan') }}";
+
+        fetch(fetchUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -883,7 +1051,10 @@
         .then(function (res) { return res.json(); })
         .then(function (data) {
             if (data.success) {
-                showToast('Transaksi ' + data.invoice_number + ' berhasil disimpan!');
+                var msg = _editMode
+                    ? 'Transaksi ' + data.invoice_number + ' berhasil diperbarui!'
+                    : 'Transaksi ' + data.invoice_number + ' berhasil disimpan!';
+                showToast(msg);
                 cart = [];
                 renderCart();
                 setTimeout(function () {
@@ -922,9 +1093,10 @@
 
     function setBtnLoading(loading) {
         btnSave.disabled = loading;
+        var saveLabel = _editMode ? 'Perbarui Transaksi' : 'Simpan Transaksi';
         btnSave.innerHTML = loading
             ? '<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...'
-            : '<i class="bi bi-check-circle-fill"></i> Simpan Transaksi';
+            : '<i class="bi bi-check-circle-fill"></i> ' + saveLabel;
     }
 
     function showToast(msg) {

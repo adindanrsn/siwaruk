@@ -100,43 +100,6 @@
     }
 
     /* ══════════════════════════════════════
-       SUMMARY CARDS
-    ══════════════════════════════════════ */
-    .summary-cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1rem;
-        margin-bottom: 1.25rem;
-    }
-
-    @media (max-width: 640px) {
-        .summary-cards { grid-template-columns: 1fr; }
-    }
-
-    .summary-card {
-        background: #ffffff;
-        border: 1px solid #E2E8F0;
-        border-radius: 0.85rem;
-        padding: 1rem 1.25rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    }
-
-    .summary-card-label {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: #64748B;
-        margin-bottom: 0.35rem;
-    }
-
-    .summary-card-value {
-        font-size: 1.3rem;
-        font-weight: 900;
-        color: #0F172A;
-    }
-
-    /* ══════════════════════════════════════
        FILTER CARD
     ══════════════════════════════════════ */
     .filter-card {
@@ -308,51 +271,6 @@
             <a href="{{ url_for('transaksi.pemasukan') }}" class="btn-cta-pemasukan">
                 <i class="bi bi-plus-circle"></i> + Pemasukan
             </a>
-        </div>
-    </div>
-
-    {# ══════════════════════════════
-       SUMMARY CARDS
-    ══════════════════════════════ #}
-    {% set total_pemasukan = history_items | selectattr('type','eq','pemasukan') | map(attribute='total') | sum %}
-    {% set total_pengeluaran = history_items | selectattr('type','eq','pengeluaran') | map(attribute='total') | sum %}
-    {% set net = total_pemasukan - total_pengeluaran %}
-    {% set waktu_label_map = {
-        'hari_ini':   'Hari Ini',
-        'minggu_ini': 'Minggu Ini',
-        'bulan_ini':  'Bulan Ini',
-        'tahun_ini':  'Tahun Ini',
-        'semua':      'Semua Waktu'
-    } %}
-    {% set waktu_label = waktu_label_map.get(waktu_filter, 'Semua Waktu') %}
-
-    <div class="summary-cards">
-        <div class="summary-card">
-            <div class="summary-card-label">
-                <i class="bi bi-plus-circle-fill text-success me-1"></i> Total Pemasukan
-            </div>
-            <div class="summary-card-value text-success">
-                Rp {{ "{:,.0f}".format(total_pemasukan).replace(',', '.') }}
-            </div>
-            <div class="small text-muted mt-1" style="font-size:0.73rem;">{{ waktu_label }}</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-card-label">
-                <i class="bi bi-dash-circle-fill text-danger me-1"></i> Total Pengeluaran
-            </div>
-            <div class="summary-card-value text-danger">
-                Rp {{ "{:,.0f}".format(total_pengeluaran).replace(',', '.') }}
-            </div>
-            <div class="small text-muted mt-1" style="font-size:0.73rem;">{{ waktu_label }}</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-card-label">
-                <i class="bi bi-calculator text-primary me-1"></i> Saldo Bersih
-            </div>
-            <div class="summary-card-value {% if net >= 0 %}text-success{% else %}text-danger{% endif %}">
-                {% if net < 0 %}-{% endif %}Rp {{ "{:,.0f}".format(net | abs).replace(',', '.') }}
-            </div>
-            <div class="small text-muted mt-1" style="font-size:0.73rem;">{{ waktu_label }}</div>
         </div>
     </div>
 
@@ -545,6 +463,12 @@
                                            class="btn btn-sm btn-outline-info rounded-3 px-2 py-1 text-dark"
                                            title="Preview Nota Kasir">
                                             <i class="bi bi-receipt-cutoff"></i>
+                                        </a>
+                                        {# Edit Pemasukan Button #}
+                                        <a href="{{ url_for('transaksi.edit_pemasukan', id=item.id) }}"
+                                           class="btn btn-sm btn-outline-warning rounded-3 px-2 py-1"
+                                           title="Edit Transaksi Pemasukan">
+                                            <i class="bi bi-pencil-square"></i>
                                         </a>
                                     {% else %}
                                         {# Detail Button (AJAX) #}
