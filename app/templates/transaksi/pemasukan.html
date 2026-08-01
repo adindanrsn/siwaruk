@@ -652,6 +652,14 @@
                                 <span class="total-amount fs-4 fw-bold text-danger" id="cartTotalText">Rp 0</span>
                             </div>
 
+                            {# Transaction Date Override #}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold small text-secondary mb-2" for="inputTransactionDate">
+                                    Tanggal & Waktu Transaksi <span class="text-danger">*</span>
+                                </label>
+                                <input type="datetime-local" id="inputTransactionDate" class="form-control border-secondary-subtle">
+                            </div>
+
                             {# Payment Method #}
                             <label class="form-label fw-semibold small text-secondary mb-2">
                                 Metode Pembayaran <span class="text-danger">*</span>
@@ -1039,13 +1047,15 @@
         setBtnLoading(true);
 
         var fetchUrl = _editMode ? _editUrl : "{{ url_for('transaksi.pemasukan') }}";
+        var transactionDate = document.getElementById('inputTransactionDate').value;
 
         fetch(fetchUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 items:          cart,
-                payment_method: selectedPayment
+                payment_method: selectedPayment,
+                transaction_date: transactionDate
             })
         })
         .then(function (res) { return res.json(); })
@@ -1108,6 +1118,19 @@
 
     /* Init */
     renderCart();
+
+    /* Initialize Transaction Date Default Value (WIB) */
+    var inputTxDate = document.getElementById('inputTransactionDate');
+    {% if existing_tx_date %}
+        inputTxDate.value = "{{ existing_tx_date }}";
+    {% else %}
+        var now = new Date();
+        // Since we want WIB, and we might be anywhere, let's format it carefully.
+        // It's safer to use the browser's timezone, but to strictly enforce WIB we can format it via JS or just let it use local assuming the user is in WIB.
+        // Or we can construct the date with an offset. The simplest is just constructing the local datetime-local string:
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        inputTxDate.value = now.toISOString().slice(0, 16);
+    {% endif %}
 
     /* ─── 8. QUICK RESTOCK ──────────────────────── */
     var restockModal    = new bootstrap.Modal(document.getElementById('modalQuickRestock'));

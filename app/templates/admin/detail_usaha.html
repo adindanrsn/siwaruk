@@ -52,7 +52,7 @@
                     <i class="bi bi-arrow-down-circle fs-3"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="fw-bold fs-6 lh-sm text-dark">Rp{{ "{:,.0f}".format(total_income|float) }}</div>
+                    <div class="fw-bold fs-6 lh-sm text-dark">Rp{{ "{:,.0f}".format(total_income|float).replace(',', '.') }}</div>
                     <small class="text-muted">Total Pemasukan</small>
                 </div>
             </div>
@@ -65,7 +65,7 @@
                     <i class="bi bi-arrow-up-circle fs-3"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="fw-bold fs-6 lh-sm text-dark">Rp{{ "{:,.0f}".format(total_expense|float) }}</div>
+                    <div class="fw-bold fs-6 lh-sm text-dark">Rp{{ "{:,.0f}".format(total_expense|float).replace(',', '.') }}</div>
                     <small class="text-muted">Total Pengeluaran</small>
                 </div>
             </div>
@@ -79,7 +79,7 @@
                 </div>
                 <div class="min-w-0">
                     <div class="fw-bold fs-6 lh-sm {% if net_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                        Rp{{ "{:,.0f}".format(net_profit|float) }}
+                        Rp{{ "{:,.0f}".format(net_profit|float).replace(',', '.') }}
                     </div>
                     <small class="text-muted">Laba Bersih</small>
                 </div>

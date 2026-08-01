@@ -2,194 +2,6 @@
 
 {% block title %}Kelola Usaha - Siwaruk{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* ─── Page wrapper: mobile-first max width ─── */
-    .kelola-page {
-        max-width: 480px;
-        margin: 0 auto;
-    }
-
-    /* ─── Section label "Kelola" ─── */
-    .kelola-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #334155;
-        margin-bottom: 0.4rem;
-        padding-left: 0.2rem;
-    }
-
-    /* ─── Business Selector Pill ─── */
-    .biz-selector-pill {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #ffffff;
-        border: 2px solid #0F172A;
-        border-radius: 50rem;
-        padding: 0.8rem 1.4rem;
-        cursor: pointer;
-        user-select: none;
-        transition: border-color 0.2s, box-shadow 0.2s;
-        position: relative;
-    }
-
-    .biz-selector-pill:hover {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(47, 116, 181, 0.15);
-    }
-
-    .biz-selector-pill .pill-name {
-        font-size: 1.2rem;
-        font-weight: 800;
-        color: #000000;
-        letter-spacing: 0.3px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .biz-selector-pill .pill-chevron {
-        font-size: 1.1rem;
-        color: #000000;
-        flex-shrink: 0;
-        margin-left: 0.5rem;
-        transition: transform 0.25s ease;
-    }
-
-    .biz-selector-pill.open .pill-chevron {
-        transform: rotate(180deg);
-    }
-
-    /* ─── Dropdown panel ─── */
-    .biz-dropdown {
-        display: none;
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
-        right: 0;
-        background: #ffffff;
-        border: 2px solid #0F172A;
-        border-radius: 1rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        z-index: 300;
-        overflow: hidden;
-    }
-
-    .biz-dropdown.show { display: block; }
-
-    .biz-drop-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.85rem 1.1rem;
-        text-decoration: none;
-        color: #1E293B;
-        font-weight: 600;
-        font-size: 0.875rem;
-        border-bottom: 1px solid #E2E8F0;
-        transition: background 0.14s;
-    }
-
-    .biz-drop-item:last-child { border-bottom: none; }
-    .biz-drop-item:hover { background: #EBF6FF; color: var(--primary-color); }
-
-    .biz-drop-item.active-biz { background: #EBF6FF; color: var(--primary-color); }
-
-    .biz-drop-icon {
-        width: 36px; height: 36px;
-        border-radius: 50%;
-        background: var(--nav-bg);
-        display: flex; align-items: center; justify-content: center;
-        color: #fff; font-size: 0.9rem; flex-shrink: 0;
-    }
-
-    .biz-drop-icon.add-icon {
-        background: #EBF6FF; color: var(--primary-color);
-    }
-
-    /* ─── Menu list container ─── */
-    .menu-list {
-        background: #ffffff;
-        border: 2px solid #0F172A;
-        overflow: hidden;
-        border-radius: 0;
-    }
-
-    /* ─── Each menu row ─── */
-    .menu-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.85rem 1rem;
-        text-decoration: none;
-        color: #000000;
-        cursor: pointer;
-        border-bottom: 1.5px solid #475569;
-        background: #ffffff;
-        transition: background 0.16s ease;
-        -webkit-tap-highlight-color: rgba(47,116,181,0.08);
-    }
-
-    .menu-row:last-child { border-bottom: none; }
-
-    .menu-row:hover {
-        background: #F0F8FF;
-        color: #000000;
-    }
-
-    .menu-row:active {
-        background: #DBEEFF;
-    }
-
-    /* Icon circle — matches reference: solid dark blue/teal circle */
-    .menu-row-icon {
-        width: 44px; height: 44px;
-        border-radius: 50%;
-        background: var(--nav-active);
-        display: flex; align-items: center; justify-content: center;
-        color: #ffffff;
-        font-size: 1.2rem;
-        flex-shrink: 0;
-    }
-
-    .menu-row-label {
-        font-size: 1.05rem;
-        font-weight: 800;
-        color: #000000;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    /* Chevron right arrow indicator */
-    .menu-row-chevron {
-        font-size: 1.3rem;
-        color: #000000;
-        -webkit-text-stroke: 0.5px #000000;
-        flex-shrink: 0;
-        transition: color 0.15s, transform 0.15s;
-    }
-
-    .menu-row:hover .menu-row-chevron {
-        color: var(--primary-color);
-        -webkit-text-stroke: 0.5px var(--primary-color);
-        transform: translateX(3px);
-    }
-
-    /* ─── Selector wrapper needs position:relative ─── */
-    .biz-selector-wrapper { position: relative; }
-
-    /* ─── No-business CTA ─── */
-    .cta-empty {
-        background: #ffffff;
-        border-radius: 1rem;
-        border: 2px dashed var(--card-border);
-        text-align: center;
-        padding: 2.5rem 1.5rem;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="kelola-page">
 
@@ -232,8 +44,8 @@
                aria-selected="{{ 'true' if biz.id == active_business.id else 'false' }}">
                 <div class="biz-drop-icon"><i class="bi bi-shop"></i></div>
                 <div class="flex-grow-1">
-                    <div class="fw-bold">{{ biz.business_name }}</div>
-                    <div style="font-size:0.72rem; color:#64748B; font-weight:500;">
+                    <div class="fw-bold" style="font-size: var(--fs-sm);">{{ biz.business_name }}</div>
+                    <div style="font-size: var(--fs-xs); color: #64748B; font-weight: 500;">
                         {{ biz.owner_name }}
                     </div>
                 </div>
@@ -244,7 +56,7 @@
             {% endfor %}
             <a href="{{ url_for('usaha.tambah_usaha') }}" class="biz-drop-item">
                 <div class="biz-drop-icon add-icon"><i class="bi bi-plus-lg"></i></div>
-                <span class="fw-bold text-primary">Tambah Usaha Baru</span>
+                <span class="fw-bold text-primary" style="font-size: var(--fs-sm);">Tambah Usaha Baru</span>
             </a>
         </div>
     </div>
@@ -346,3 +158,4 @@
 })();
 </script>
 {% endblock %}
+

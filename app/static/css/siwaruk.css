@@ -1,0 +1,675 @@
+/*
+ * siwaruk.css
+ * Global stylesheet for Siwaruk UMKM App
+ * Mobile-first responsive typography system
+ */
+
+/* ===================================================================
+   1. CSS VARIABLES — Design Tokens
+   =================================================================== */
+:root {
+    /* Typography Scale — mobile base */
+    --fs-page-title:  clamp(1.35rem, 4.5vw, 2rem);     /* h1/page title  24–32 px */
+    --fs-section:     clamp(1.1rem,  3.5vw, 1.5rem);   /* h2/section     18–24 px */
+    --fs-card-title:  clamp(1rem,    2.8vw, 1.2rem);   /* h5/card title  16–19 px */
+    --fs-body:        clamp(0.875rem, 2.2vw, 1rem);    /* body copy      14–16 px */
+    --fs-sm:          clamp(0.8rem,  1.8vw, 0.9rem);   /* small/label    12.8–14.4 px */
+    --fs-xs:          clamp(0.75rem, 1.6vw, 0.8125rem);/* caption        12–13 px */
+
+    /* Nominal amounts */
+    --fs-nominal-lg:  clamp(1.1rem, 4vw, 1.5rem);     /* big stats card */
+    --fs-nominal-md:  clamp(0.95rem, 3vw, 1.125rem);  /* medium card    */
+    --fs-nominal-sm:  clamp(0.8rem,  2.4vw, 0.95rem); /* table/small    */
+
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+
+    /* Line Heights */
+    --lh-tight:  1.25;
+    --lh-normal: 1.5;
+    --lh-loose:  1.75;
+}
+
+/* ===================================================================
+   2. BASE TYPOGRAPHY — body & headings
+   =================================================================== */
+body {
+    font-size: var(--fs-body);
+    line-height: var(--lh-normal);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+h1, .h1 {
+    font-size: var(--fs-page-title);
+    line-height: var(--lh-tight);
+    font-weight: 800;
+}
+
+h2, .h2 {
+    font-size: var(--fs-section);
+    line-height: var(--lh-tight);
+    font-weight: 700;
+}
+
+h3, .h3 {
+    font-size: clamp(1rem, 3vw, 1.35rem);
+    line-height: var(--lh-tight);
+    font-weight: 700;
+}
+
+h4, .h4 {
+    font-size: var(--fs-card-title);
+    line-height: var(--lh-tight);
+    font-weight: 700;
+}
+
+h5, .h5 {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    line-height: var(--lh-tight);
+    font-weight: 700;
+}
+
+h6, .h6 {
+    font-size: var(--fs-body);
+    line-height: var(--lh-tight);
+    font-weight: 600;
+}
+
+p, li, td, th, label, .form-control, .form-select {
+    font-size: var(--fs-body);
+    line-height: var(--lh-normal);
+}
+
+small, .small, .text-muted, caption {
+    font-size: var(--fs-sm) !important;
+    line-height: var(--lh-normal);
+}
+
+.text-xs, .caption {
+    font-size: var(--fs-xs) !important;
+    line-height: var(--lh-normal);
+}
+
+/* ===================================================================
+   3. NAVBAR / SIDEBAR
+   =================================================================== */
+.main-nav-bar .nav-link-item {
+    font-size: clamp(0.8rem, 2.2vw, 0.9375rem);
+    padding: 0.75rem 1rem;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+@media (max-width: 575.98px) {
+    .main-nav-bar .nav-link-item {
+        font-size: 0.8rem;
+        padding: 0.65rem 0.6rem;
+    }
+    .header-top {
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+    }
+    .header-top img[height="48"] {
+        height: 36px;
+    }
+}
+
+/* ===================================================================
+   4. PAGE TITLES & SECTION HEADINGS
+   =================================================================== */
+.page-title {
+    font-size: var(--fs-page-title);
+    font-weight: 800;
+    line-height: var(--lh-tight);
+}
+
+.section-title {
+    font-size: var(--fs-section);
+    font-weight: 700;
+    line-height: var(--lh-tight);
+}
+
+/* Bootstrap h3 used as page-level headings in templates */
+.row h3.fw-bold,
+.d-flex h3.fw-bold {
+    font-size: var(--fs-page-title);
+}
+
+/* ===================================================================
+   5. STATS / SUMMARY CARDS — Nominal Rupiah
+   =================================================================== */
+.fs-nominal-lg,
+.fw-extrabold.text-success.mb-0,
+.fw-extrabold.text-danger.mb-0,
+.fw-extrabold.text-primary.mb-0 {
+    font-size: var(--fs-nominal-lg) !important;
+    line-height: var(--lh-tight);
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.card-custom .fw-bold.fs-2 {
+    font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+}
+
+/* Ensure stat cards don't overflow */
+.card-custom,
+.card.border-0 {
+    overflow: hidden;
+}
+
+.min-w-0 {
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ===================================================================
+   6. TABLES — Responsive
+   =================================================================== */
+.table-responsive {
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    font-size: var(--fs-body);
+}
+
+.table th {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.table td {
+    font-size: var(--fs-body);
+    vertical-align: middle;
+    word-break: break-word;
+}
+
+@media (max-width: 767.98px) {
+    .table {
+        font-size: var(--fs-sm);
+    }
+    .table th {
+        font-size: var(--fs-xs);
+    }
+    .table td {
+        font-size: var(--fs-sm);
+    }
+    /* Collapse padding on tight screens */
+    .table td, .table th {
+        padding: 0.5rem 0.4rem;
+    }
+}
+
+/* ===================================================================
+   7. FORMS — Inputs, Selects, Labels
+   =================================================================== */
+.form-label {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.form-control,
+.form-select {
+    font-size: var(--fs-body);
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.6rem;
+    line-height: var(--lh-normal);
+}
+
+.form-control-lg,
+.form-select-lg {
+    font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+    padding: 0.65rem 1rem;
+}
+
+.form-text,
+.invalid-feedback,
+.valid-feedback {
+    font-size: var(--fs-xs);
+}
+
+@media (max-width: 575.98px) {
+    .form-control,
+    .form-select {
+        font-size: 0.875rem;
+        padding: 0.45rem 0.65rem;
+    }
+}
+
+/* ===================================================================
+   8. BUTTONS
+   =================================================================== */
+.btn {
+    font-size: var(--fs-body);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.6rem;
+    line-height: var(--lh-normal);
+    letter-spacing: 0.01em;
+}
+
+.btn-sm {
+    font-size: var(--fs-sm);
+    padding: 0.3rem 0.75rem;
+    border-radius: 0.5rem;
+}
+
+.btn-lg {
+    font-size: clamp(1rem, 2.5vw, 1.125rem);
+    padding: 0.65rem 1.5rem;
+}
+
+@media (max-width: 575.98px) {
+    .btn {
+        font-size: 0.875rem;
+        padding: 0.45rem 0.85rem;
+    }
+    .btn-lg {
+        font-size: 0.9rem;
+        padding: 0.55rem 1.2rem;
+    }
+}
+
+/* ===================================================================
+   9. BADGE & PILL
+   =================================================================== */
+.badge {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 0.35em 0.65em;
+}
+
+/* ===================================================================
+   10. MODALS
+   =================================================================== */
+.modal-title {
+    font-size: clamp(1rem, 3vw, 1.25rem);
+    font-weight: 700;
+    line-height: var(--lh-tight);
+}
+
+.modal-body,
+.modal-footer {
+    font-size: var(--fs-body);
+}
+
+.modal-header {
+    padding: 1rem 1.25rem;
+}
+
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    .modal-title {
+        font-size: 1rem;
+    }
+    .modal-body {
+        font-size: 0.875rem;
+    }
+}
+
+/* ===================================================================
+   11. CARDS — General
+   =================================================================== */
+.card-header,
+.card-footer {
+    font-size: var(--fs-body);
+}
+
+/* Quick action cards on dashboard */
+.card.rounded-4 .fw-bold.small {
+    font-size: var(--fs-xs) !important;
+    line-height: 1.3;
+}
+
+/* ===================================================================
+   12. DASHBOARD — OWNER
+   =================================================================== */
+/* Business selector dropdown button */
+#activeBusinessDropdown {
+    font-size: clamp(0.9rem, 3vw, 1.1rem) !important;
+    padding: 0.6rem 1rem !important;
+}
+
+/* Period filter buttons */
+.btn-group .btn {
+    font-size: var(--fs-xs);
+}
+
+/* Ringkasan cards - label */
+.text-success-emphasis.fw-bold,
+.text-danger-emphasis.fw-bold {
+    font-size: var(--fs-sm);
+}
+
+/* Ringkasan nominal */
+.p-3.rounded-4 h4,
+.p-4.rounded-4 h4 {
+    font-size: var(--fs-nominal-lg) !important;
+    line-height: var(--lh-tight);
+}
+
+/* List group recent transactions */
+.list-group-item .fw-bold.text-dark.small {
+    font-size: var(--fs-sm) !important;
+}
+
+.list-group-item .text-muted {
+    font-size: var(--fs-xs) !important;
+}
+
+/* ===================================================================
+   13. LAPORAN KEUANGAN
+   =================================================================== */
+#valPemasukan,
+#valPengeluaran,
+.fw-extrabold[id^="val"] {
+    font-size: var(--fs-nominal-lg) !important;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* ===================================================================
+   14. KELOLA USAHA & PROFIL — page headings
+   =================================================================== */
+.card-custom .card-body h4,
+.card-custom .card-body h5 {
+    font-size: var(--fs-card-title);
+    line-height: var(--lh-tight);
+}
+
+/* ===================================================================
+   15. ALERT & FLASH MESSAGES
+   =================================================================== */
+.alert {
+    font-size: var(--fs-body);
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+}
+
+/* ===================================================================
+   16. UTILITIES — overflow and wrapping
+   =================================================================== */
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.word-break {
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Prevent long Rp values from overflowing cards */
+[class*="fw-extrabold"],
+[class*="fw-bold"].text-success,
+[class*="fw-bold"].text-danger,
+[class*="fw-bold"].text-primary {
+    overflow-wrap: break-word;
+    word-break: break-all;
+}
+
+/* ===================================================================
+   17. EXTRA SMALL (< 400px) — very small phones
+   =================================================================== */
+@media (max-width: 399.98px) {
+    body {
+        font-size: 0.85rem;
+    }
+    .main-nav-bar .nav-link-item {
+        font-size: 0.75rem;
+        padding: 0.6rem 0.45rem;
+    }
+    .btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.75rem;
+    }
+    .card-custom {
+        border-radius: 0.75rem;
+    }
+}
+
+/* ===================================================================
+   18. PRINT
+   =================================================================== */
+@media print {
+    body {
+        font-size: 11pt;
+    }
+    .main-nav-bar,
+    .header-top,
+    footer {
+        display: none !important;
+    }
+}
+
+/* ===================================================================
+   19. KELOLA USAHA — Page-specific (uses global variables)
+   =================================================================== */
+
+/* Page wrapper: mobile-first centered layout */
+.kelola-page {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+/* Section label "Kelola" */
+.kelola-label {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 0.4rem;
+    padding-left: 0.2rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ── Business Selector Pill ── */
+.biz-selector-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #ffffff;
+    border: 2px solid #0F172A;
+    border-radius: 50rem;
+    padding: 0.75rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+.biz-selector-pill:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(47, 116, 181, 0.15);
+}
+
+/* Business name inside pill — responsive via clamp */
+.biz-selector-pill .pill-name {
+    font-size: clamp(0.95rem, 3vw, 1.15rem);
+    font-weight: 800;
+    color: #000000;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.biz-selector-pill .pill-chevron {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    color: #000000;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+    transition: transform 0.25s ease;
+}
+
+.biz-selector-pill.open .pill-chevron {
+    transform: rotate(180deg);
+}
+
+/* ── Dropdown panel ── */
+.biz-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 2px solid #0F172A;
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    z-index: 300;
+    overflow: hidden;
+}
+
+.biz-dropdown.show { display: block; }
+
+.biz-drop-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1.1rem;
+    text-decoration: none;
+    color: #1E293B;
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    border-bottom: 1px solid #E2E8F0;
+    transition: background 0.14s;
+}
+
+.biz-drop-item:last-child { border-bottom: none; }
+.biz-drop-item:hover { background: #EBF6FF; color: var(--primary-color); }
+.biz-drop-item.active-biz { background: #EBF6FF; color: var(--primary-color); }
+
+.biz-drop-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--nav-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: var(--fs-sm);
+    flex-shrink: 0;
+}
+
+.biz-drop-icon.add-icon {
+    background: #EBF6FF;
+    color: var(--primary-color);
+}
+
+.biz-selector-wrapper { position: relative; }
+
+/* ── Menu List container ── */
+.menu-list {
+    background: #ffffff;
+    border: 2px solid #0F172A;
+    overflow: hidden;
+    border-radius: 1rem;          /* rounded corners — feels modern */
+}
+
+/* ── Each menu row ── */
+.menu-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem;
+    text-decoration: none;
+    color: #000000;
+    cursor: pointer;
+    border-bottom: 1.5px solid #CBD5E1;
+    background: #ffffff;
+    transition: background 0.16s ease;
+    -webkit-tap-highlight-color: rgba(47, 116, 181, 0.08);
+    /* Ensure readable on mobile — min touch target 44px */
+    min-height: 60px;
+}
+
+.menu-row:last-child { border-bottom: none; }
+
+.menu-row:hover {
+    background: #F0F8FF;
+    color: #000000;
+}
+
+.menu-row:active { background: #DBEEFF; }
+
+/* Icon circle */
+.menu-row-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--nav-active);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    flex-shrink: 0;
+}
+
+/* Menu label — uses global section font size */
+.menu-row-label {
+    font-size: var(--fs-card-title);
+    font-weight: 700;
+    color: #000000;
+    margin: 0;
+    line-height: var(--lh-tight);
+}
+
+/* Chevron */
+.menu-row-chevron {
+    font-size: clamp(1rem, 3vw, 1.3rem);
+    color: #475569;
+    flex-shrink: 0;
+    transition: color 0.15s, transform 0.15s;
+}
+
+.menu-row:hover .menu-row-chevron {
+    color: var(--primary-color);
+    transform: translateX(3px);
+}
+
+/* ── No-business CTA ── */
+.cta-empty {
+    background: #ffffff;
+    border-radius: 1rem;
+    border: 2px dashed var(--card-border);
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+}
+
+/* ── Mobile adjustments ── */
+@media (max-width: 575.98px) {
+    .kelola-page {
+        max-width: 100%;
+    }
+
+    .biz-selector-pill {
+        padding: 0.65rem 1rem;
+    }
+
+    .menu-row {
+        padding: 0.8rem 0.85rem;
+        min-height: 56px;
+    }
+
+    .menu-row-icon {
+        width: 40px;
+        height: 40px;
+    }
+}

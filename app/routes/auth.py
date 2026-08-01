@@ -68,10 +68,30 @@ def profil():
         if action == 'update_profile':
             full_name = request.form.get('full_name', '').strip()
             phone = request.form.get('phone', '').strip()
+            new_username = request.form.get('username', '').strip()
 
             if not full_name:
                 flash('Nama Lengkap tidak boleh kosong.', 'danger')
                 return render_template('auth/profil.html')
+
+            if not new_username:
+                flash('Username tidak boleh kosong.', 'danger')
+                return render_template('auth/profil.html')
+            
+            import re
+            if not re.match(r'^[a-zA-Z0-9_]+$', new_username):
+                flash('Username hanya boleh terdiri dari huruf, angka, dan underscore (_), tanpa spasi.', 'danger')
+                return render_template('auth/profil.html')
+            
+            if len(new_username) < 4 or len(new_username) > 30:
+                flash('Username harus terdiri dari 4 hingga 30 karakter.', 'danger')
+                return render_template('auth/profil.html')
+                
+            if new_username != current_user.username:
+                existing_user = User.query.filter_by(username=new_username).first()
+                if existing_user:
+                    flash('Username sudah digunakan. Silakan gunakan username lain.', 'danger')
+                    return render_template('auth/profil.html')
 
             if current_user.role == 'admin':
                 if not phone:
@@ -81,10 +101,17 @@ def profil():
                     flash('Format Nomor WhatsApp tidak valid. Gunakan angka saja (boleh diawali +) dengan panjang 9-15 karakter.', 'danger')
                     return render_template('auth/profil.html')
 
+            username_changed = (new_username != current_user.username)
             current_user.full_name = full_name
+            current_user.username = new_username
             current_user.phone = phone or None
             db.session.commit()
-            flash('Informasi akun berhasil diperbarui!', 'success')
+            
+            if username_changed:
+                flash('Informasi akun berhasil diperbarui! Username berhasil diperbarui. Gunakan username baru tersebut pada saat login berikutnya.', 'success')
+            else:
+                flash('Informasi akun berhasil diperbarui!', 'success')
+                
             return redirect(url_for('auth.profil'))
 
         elif action == 'change_password':
@@ -100,8 +127,9 @@ def profil():
                 flash('Password lama tidak sesuai. Silakan coba lagi.', 'danger')
                 return render_template('auth/profil.html')
 
-            if len(new_password) < 8:
-                flash('Password baru minimal harus 8 karakter.', 'danger')
+            import re
+            if len(new_password) < 8 or not re.search(r'[a-zA-Z]', new_password) or not re.search(r'\d', new_password):
+                flash('Password minimal terdiri dari 8 karakter serta mengandung minimal 1 huruf dan 1 angka.', 'danger')
                 return render_template('auth/profil.html')
 
             if new_password != confirm_password:

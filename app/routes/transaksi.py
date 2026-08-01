@@ -212,6 +212,7 @@ def pemasukan():
         cart_items = data.get('items', [])
         payment_method = data.get('payment_method', '').strip()
         notes = data.get('notes', '').strip()
+        transaction_date_str = data.get('transaction_date', '').strip()
 
         if not cart_items or len(cart_items) == 0:
             return jsonify({'success': False, 'message': 'Keranjang transaksi minimal harus berisi 1 produk.'}), 400
@@ -260,11 +261,27 @@ def pemasukan():
             # Create SalesTransaction & Sale headers
             inv_number = _generate_invoice_number(active_biz.id)
             
+            # Handle transaction_date parsing (input is in WIB)
+            from zoneinfo import ZoneInfo
+            from datetime import timezone as _tz
+            _WIB = ZoneInfo('Asia/Jakarta')
+            
+            if transaction_date_str:
+                try:
+                    dt_wib = datetime.strptime(transaction_date_str, '%Y-%m-%dT%H:%M')
+                    dt_wib = dt_wib.replace(tzinfo=_WIB)
+                    tx_date_utc = dt_wib.astimezone(_tz.utc).replace(tzinfo=None)
+                except ValueError:
+                    tx_date_utc = datetime.utcnow()
+            else:
+                tx_date_utc = datetime.utcnow()
+            
             sales_tx = SalesTransaction(
                 business_id=active_biz.id,
                 transaction_code=inv_number,
                 payment_method=payment_method,
-                total_amount=total_sale
+                total_amount=total_sale,
+                created_at=tx_date_utc
             )
             db.session.add(sales_tx)
             db.session.flush()
@@ -272,7 +289,7 @@ def pemasukan():
             new_sale = Sale(
                 business_id=active_biz.id,
                 invoice_number=inv_number,
-                transaction_date=sales_tx.created_at,
+                transaction_date=tx_date_utc,
                 total=total_sale,
                 payment_method=payment_method,
                 notes=notes or None
@@ -343,6 +360,7 @@ def edit_pemasukan(id):
         cart_items = data.get('items', [])
         payment_method = data.get('payment_method', '').strip()
         notes = data.get('notes', '').strip()
+        transaction_date_str = data.get('transaction_date', '').strip()
 
         if not cart_items:
             return jsonify({'success': False, 'message': 'Keranjang transaksi minimal harus berisi 1 produk.'}), 400
@@ -422,10 +440,26 @@ def edit_pemasukan(id):
             sale.total = total_sale
             sale.payment_method = payment_method
             sale.notes = notes or None
+            
+            # Handle transaction_date parsing (input is in WIB)
+            from zoneinfo import ZoneInfo
+            from datetime import timezone as _tz
+            _WIB = ZoneInfo('Asia/Jakarta')
+            
+            if transaction_date_str:
+                try:
+                    dt_wib = datetime.strptime(transaction_date_str, '%Y-%m-%dT%H:%M')
+                    dt_wib = dt_wib.replace(tzinfo=_WIB)
+                    tx_date_utc = dt_wib.astimezone(_tz.utc).replace(tzinfo=None)
+                    sale.transaction_date = tx_date_utc
+                except ValueError:
+                    pass
 
             if old_sales_tx:
                 old_sales_tx.total_amount = total_sale
                 old_sales_tx.payment_method = payment_method
+                if transaction_date_str:
+                    old_sales_tx.created_at = sale.transaction_date
 
             db.session.commit()
 
@@ -454,13 +488,20 @@ def edit_pemasukan(id):
     products = Product.query.filter_by(business_id=active_biz.id, is_active=True).order_by(Product.name.asc()).all()
     categories = Category.query.filter_by(business_id=active_biz.id).order_by(Category.name.asc()).all()
 
+    from zoneinfo import ZoneInfo
+    from datetime import timezone as _tz
+    _WIB = ZoneInfo('Asia/Jakarta')
+    tx_dt = sale.transaction_date.replace(tzinfo=_tz.utc).astimezone(_WIB)
+    existing_tx_date = tx_dt.strftime('%Y-%m-%dT%H:%M')
+
     return render_template(
         'transaksi/pemasukan.html',
         products=products,
         categories=categories,
         active_business=active_biz,
         existing_sale=sale,
-        existing_cart=existing_cart
+        existing_cart=existing_cart,
+        existing_tx_date=existing_tx_date
     )
 
 

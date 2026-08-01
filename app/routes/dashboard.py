@@ -158,6 +158,77 @@ def index():
             reset_info=reset_info,
         )
     else:
-        active_biz = get_active_business()
-        return render_template('dashboard/index.html', user=current_user, active_business=active_biz)
+        # ── Owner dashboard: real financial summary (same logic as laporan) ──
+        from app.models.sale import Sale
+        from app.models.expense import Expense
+        from zoneinfo import ZoneInfo
+        from datetime import timedelta, timezone as _tz
+        import calendar
 
+        _WIB = ZoneInfo('Asia/Jakarta')
+        now_wib = datetime.now(_WIB)
+
+        # Build periode options
+        start_hari   = now_wib.replace(hour=0,  minute=0,  second=0,  microsecond=0)
+        end_hari     = now_wib.replace(hour=23, minute=59, second=59, microsecond=999999)
+        start_minggu = (now_wib - timedelta(days=now_wib.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+        end_minggu   = (start_minggu + timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=999999)
+        start_bulan  = now_wib.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        last_day     = calendar.monthrange(now_wib.year, now_wib.month)[1]
+        end_bulan    = now_wib.replace(day=last_day, hour=23, minute=59, second=59, microsecond=999999)
+
+        periodes = {
+            'hari_ini':   ('Hari Ini',   start_hari,   end_hari),
+            'minggu_ini': ('Minggu Ini', start_minggu, end_minggu),
+            'bulan_ini':  ('Bulan Ini',  start_bulan,  end_bulan),
+        }
+
+        selected_periode = request.args.get('periode', 'bulan_ini')
+        if selected_periode not in periodes:
+            selected_periode = 'bulan_ini'
+
+        periode_label, start_wib, end_wib = periodes[selected_periode]
+
+        # Convert to UTC naive — identical to laporan.py's to_utc_naive()
+        start_utc = start_wib.astimezone(_tz.utc).replace(tzinfo=None)
+        end_utc   = end_wib.astimezone(_tz.utc).replace(tzinfo=None)
+
+        active_biz = get_active_business()
+        summary = {'pemasukan': 0.0, 'pengeluaran': 0.0, 'laba_bersih': 0.0}
+        recent_sales = []
+
+        if active_biz:
+            sales = Sale.query.filter(
+                Sale.business_id == active_biz.id,
+                Sale.transaction_date >= start_utc,
+                Sale.transaction_date <= end_utc,
+            ).order_by(Sale.transaction_date.desc()).all()
+
+            expenses = Expense.query.filter(
+                Expense.business_id == active_biz.id,
+                Expense.expense_date >= start_utc,
+                Expense.expense_date <= end_utc,
+            ).all()
+
+            total_pemasukan   = sum(float(s.total) for s in sales)
+            total_pengeluaran = sum(float(e.amount) for e in expenses)
+            summary = {
+                'pemasukan':   total_pemasukan,
+                'pengeluaran': total_pengeluaran,
+                'laba_bersih': total_pemasukan - total_pengeluaran,
+            }
+            recent_sales = sales[:3]
+
+        user_businesses = current_user.businesses.all()
+
+        return render_template(
+            'dashboard/index.html',
+            user=current_user,
+            active_business=active_biz,
+            user_businesses=user_businesses,
+            summary=summary,
+            recent_sales=recent_sales,
+            periodes=periodes,
+            selected_periode=selected_periode,
+            periode_label=periode_label,
+        )

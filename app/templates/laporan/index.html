@@ -2,7 +2,7 @@
 
 {% block title %}Laporan Keuangan - Siwaruk{% endblock %}
 
-{% block head %}
+{% block extra_css %}
 <style>
     .chart-container {
         position: relative;
@@ -23,8 +23,18 @@
     .rank-2 { background: #cbd5e1; color: #fff; }
     .rank-3 { background: #d97706; color: #fff; }
     .rank-n { background: #f1f5f9; color: #64748b; }
+
+    .periode-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        padding: 0.25rem 0.75rem; border-radius: 100px;
+        font-size: 0.75rem; font-weight: 700; letter-spacing: 0.03em;
+    }
+    .periode-badge.hari-ini   { background: #d1fae5; color: #065f46; }
+    .periode-badge.minggu-ini { background: #dbeafe; color: #1e40af; }
+    .periode-badge.bulan-ini  { background: #ede9fe; color: #5b21b6; }
+    .periode-badge.tahun-ini  { background: #ffedd5; color: #9a3412; }
+    .periode-badge.custom     { background: #f1f5f9; color: #475569; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -34,12 +44,26 @@
     </a>
 </div>
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start gap-3 mb-4">
     <div>
         <h4 class="fw-bold mb-1">Laporan Keuangan</h4>
-        <p class="text-muted small mb-0">Ringkasan keuangan usaha {{ active_business.business_name }}</p>
+        <p class="text-muted small mb-2">Ringkasan keuangan usaha {{ active_business.business_name }}</p>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if periode == 'hari_ini' %}
+                <span class="periode-badge hari-ini" id="headerPeriodeBadge"><span>🟢</span> Hari Ini</span>
+            {% elif periode == 'minggu_ini' %}
+                <span class="periode-badge minggu-ini" id="headerPeriodeBadge"><span>🔵</span> Minggu Ini</span>
+            {% elif periode == 'bulan_ini' %}
+                <span class="periode-badge bulan-ini" id="headerPeriodeBadge"><span>🟣</span> Bulan Ini</span>
+            {% elif periode == 'tahun_ini' %}
+                <span class="periode-badge tahun-ini" id="headerPeriodeBadge"><span>🟠</span> Tahun Ini</span>
+            {% else %}
+                <span class="periode-badge custom" id="headerPeriodeBadge"><span>⚪</span> Custom</span>
+            {% endif %}
+            <span class="text-muted small" id="headerPeriodeDate">{{ formatted_periode }}</span>
+        </div>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-shrink-0">
         <a id="btnExportPdf"
            href="{{ url_for('laporan.export_pdf', periode=periode, start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}"
            class="btn btn-outline-danger btn-sm rounded-pill fw-semibold px-3" target="_blank">
@@ -59,7 +83,7 @@
             <div class="small fw-bold text-secondary mb-3">Periode Aktif</div>
             <div class="d-inline-flex align-items-center gap-2 bg-light p-2 px-3 rounded-3 border">
                 <i class="bi bi-calendar3 text-primary"></i>
-                <span class="fw-bold small" id="activePeriodBadge">{{ start_date }} - {{ end_date }}</span>
+                <span class="fw-bold small" id="activePeriodBadge">{{ formatted_periode }}</span>
                 <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-3" id="activePeriodTag">
                     {% if periode == 'hari_ini' %}Hari Ini
                     {% elif periode == 'minggu_ini' %}Minggu Ini
@@ -152,36 +176,47 @@
         <div class="card-custom p-4 h-100 d-flex flex-column">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
                 <h6 class="fw-bold mb-0">Grafik Keuangan</h6>
-                <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary active chart-tab" id="btnTabPemasukan" onclick="switchChartTab('pemasukan')">Pemasukan</button>
-                    <button type="button" class="btn btn-outline-primary chart-tab" id="btnTabLaba" onclick="switchChartTab('laba_bersih')">Laba Bersih</button>
+                <div class="d-flex gap-2 flex-wrap" id="chartToggles">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill dataset-toggle fw-semibold px-3" data-dataset="0">
+                        Pemasukan
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill dataset-toggle fw-semibold px-3" data-dataset="1">
+                        Pengeluaran
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill dataset-toggle fw-semibold px-3" data-dataset="2">
+                        Laba Bersih
+                    </button>
                 </div>
             </div>
             <div class="chart-container flex-grow-1">
-                <div id="chartEmptyState" class="position-absolute top-50 start-50 translate-middle text-center text-muted d-none">
-                    <i class="bi bi-graph-down mb-2 fs-2"></i>
-                    <p class="mb-0 small">Belum ada data pada periode ini.</p>
+                <div id="chartWrapper" style="position:relative; height:100%">
+                    <div id="chartEmptyState" class="position-absolute top-50 start-50 translate-middle text-center text-muted d-none">
+                        <i class="bi bi-graph-down mb-2 fs-2"></i>
+                        <p class="mb-0 small">Belum ada data pada periode ini.</p>
+                    </div>
+                    <canvas id="salesChart"></canvas>
                 </div>
-                <canvas id="salesChart"></canvas>
             </div>
         </div>
     </div>
 
     <div class="col-12 col-lg-5 col-xl-4">
         <div class="card-custom p-4 h-100">
-            <h6 class="fw-bold mb-4">Produk Terlaris</h6>
-            <div class="d-flex flex-column gap-3" id="topProductsList">
+            <h6 class="fw-bold mb-1">Produk Terlaris</h6>
+            <p class="text-muted small mb-3">Berdasarkan jumlah unit terjual pada periode aktif</p>
+            <div class="d-flex flex-column gap-1" id="topProductsList">
                 {% if data.top_products %}
                     {% for p in data.top_products %}
-                    <div class="d-flex align-items-center gap-3">
-                        {% set rc = 'rank-1' if loop.index==1 else ('rank-2' if loop.index==2 else ('rank-3' if loop.index==3 else 'rank-n')) %}
-                        <div class="rank-badge {{ rc }}">{{ loop.index }}</div>
-                        <div class="product-avatar"><i class="bi bi-cup-hot"></i></div>
+                    {% set rc = 'rank-1' if loop.index==1 else ('rank-2' if loop.index==2 else ('rank-3' if loop.index==3 else 'rank-n')) %}
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+                        <div class="rank-badge {{ rc }} flex-shrink-0">{{ loop.index }}</div>
                         <div class="flex-grow-1 overflow-hidden">
-                            <div class="fw-bold small text-truncate">{{ p.name }}</div>
-                            <div class="small text-muted">{{ p.qty }} terjual</div>
+                            <div class="fw-bold text-truncate" style="font-size: 0.875rem;">{{ p.name }}</div>
+                            <div class="text-muted" style="font-size: 0.78rem;">
+                                <span class="me-2"><i class="bi bi-bag-check me-1"></i>{{ p.qty }} terjual</span>
+                                <span class="text-success fw-semibold">Rp{{ "{:,.0f}".format(p.subtotal).replace(',', '.') }}</span>
+                            </div>
                         </div>
-                        <div class="fw-bold text-success small">Rp{{ "{:,.0f}".format(p.subtotal).replace(',', '.') }}</div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -199,6 +234,12 @@
     <i class="bi bi-info-circle me-1"></i> Data laporan mengikuti zona waktu Asia/Jakarta (WIB) dan diperbarui saat ini.
 </div>
 
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     function toggleCustomDate(event) {
         var wrap = document.getElementById('customDateWrap');
@@ -220,51 +261,34 @@
     }
 
     let salesChart;
-    let currentChartMode = 'pemasukan';
     
     let currentLabels = {{ data.chart_labels | tojson }};
     let dataPemasukan = {{ data.chart_pemasukan | tojson }};
+    let dataPengeluaran = {{ data.chart_pengeluaran | tojson }};
     let dataLabaBersih = {{ data.chart_laba_bersih | tojson }};
+    
+    console.log("=== DEBUGGING CHART DATA ===");
+    console.log("Labels:", currentLabels);
+    console.log("Pemasukan:", dataPemasukan);
+    console.log("Pengeluaran:", dataPengeluaran);
+    console.log("Laba Bersih:", dataLabaBersih);
+    console.log("============================");
 
-    function switchChartTab(mode) {
-        currentChartMode = mode;
-        const tabs = document.querySelectorAll('.chart-tab');
-        tabs.forEach(t => t.classList.remove('active'));
-        if (mode === 'pemasukan') {
-            document.getElementById('btnTabPemasukan').classList.add('active');
-        } else {
-            document.getElementById('btnTabLaba').classList.add('active');
-        }
-        updateChartDisplay();
-    }
-
-    function updateChartDisplay() {
-        const activeData = currentChartMode === 'pemasukan' ? dataPemasukan : dataLabaBersih;
-        
-        const isEmpty = activeData.length === 0 || activeData.every(v => v === 0);
-        const canvas = document.getElementById('salesChart');
+    function checkEmptyState() {
+        const d0 = salesChart.data.datasets[0].data;
+        const d1 = salesChart.data.datasets[1].data;
+        const d2 = salesChart.data.datasets[2].data;
+        const allZero = d0.every(v => +v === 0) && d1.every(v => +v === 0) && d2.every(v => +v === 0);
+        const isEmpty = currentLabels.length === 0 || allZero;
         const emptyState = document.getElementById('chartEmptyState');
+        const canvas = document.getElementById('salesChart');
         
         if (isEmpty) {
-            canvas.style.display = 'none';
+            canvas.style.opacity = '0';
             emptyState.classList.remove('d-none');
         } else {
-            canvas.style.display = 'block';
+            canvas.style.opacity = '1';
             emptyState.classList.add('d-none');
-            
-            salesChart.data.labels = currentLabels;
-            salesChart.data.datasets[0].data = activeData;
-            
-            if (currentChartMode === 'pemasukan') {
-                salesChart.data.datasets[0].label = 'Total Pemasukan (Rp)';
-                salesChart.data.datasets[0].borderColor = '#2F74B5';
-                salesChart.data.datasets[0].backgroundColor = 'rgba(47, 116, 181, 0.1)';
-            } else {
-                salesChart.data.datasets[0].label = 'Laba Bersih (Rp)';
-                salesChart.data.datasets[0].borderColor = '#198754';
-                salesChart.data.datasets[0].backgroundColor = 'rgba(25, 135, 84, 0.1)';
-            }
-            salesChart.update();
         }
     }
 
@@ -274,25 +298,72 @@
             type: 'line',
             data: {
                 labels: currentLabels,
-                datasets: [{
-                    label: 'Total Pemasukan (Rp)',
-                    data: dataPemasukan,
-                    borderColor: '#2F74B5',
-                    backgroundColor: 'rgba(47, 116, 181, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.3
-                }]
+                datasets: [
+                    {
+                        label: 'Pemasukan (Rp)',
+                        data: dataPemasukan,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Pengeluaran (Rp)',
+                        data: dataPengeluaran,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Laba Bersih (Rp)',
+                        data: dataLabaBersih,
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
+                scales: { y: { beginAtZero: true } },
+                interaction: { mode: 'index', intersect: false }
             }
         });
         
-        updateChartDisplay();
+        console.log("=== DEBUGGING SALES CHART ===");
+        console.log(salesChart);
+        console.log("Datasets hidden status:");
+        console.log("0:", salesChart.getDatasetMeta(0).hidden);
+        console.log("1:", salesChart.getDatasetMeta(1).hidden);
+        console.log("2:", salesChart.getDatasetMeta(2).hidden);
+        console.log("============================");
+
+        checkEmptyState();
+
+        document.querySelectorAll('.dataset-toggle').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-dataset'));
+                const isVisible = salesChart.isDatasetVisible(index);
+                
+                salesChart.setDatasetVisibility(index, !isVisible);
+                salesChart.update();
+                
+                if (isVisible) {
+                    this.classList.replace('btn-primary', 'btn-outline-primary');
+                } else {
+                    this.classList.replace('btn-outline-primary', 'btn-primary');
+                }
+                
+                checkEmptyState();
+            });
+        });
 
         const form = document.getElementById('filterForm');
         form.addEventListener('submit', function(e) {
@@ -326,9 +397,21 @@
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') {
-                    document.getElementById('activePeriodBadge').innerHTML = `${res.start_date} - ${res.end_date}`;
+                    document.getElementById('activePeriodBadge').innerHTML = res.formatted_periode;
                     const labels = { 'hari_ini': 'Hari Ini', 'minggu_ini': 'Minggu Ini', 'bulan_ini': 'Bulan Ini', 'tahun_ini': 'Tahun Ini', 'custom': 'Custom' };
-                    document.getElementById('activePeriodTag').textContent = labels[document.getElementById('hiddenPeriode').value] || 'Custom';
+                    const icons  = { 'hari_ini': '🟢', 'minggu_ini': '🔵', 'bulan_ini': '🟣', 'tahun_ini': '🟠', 'custom': '⚪' };
+                    const cls    = { 'hari_ini': 'hari-ini', 'minggu_ini': 'minggu-ini', 'bulan_ini': 'bulan-ini', 'tahun_ini': 'tahun-ini', 'custom': 'custom' };
+                    const currentPeriode = document.getElementById('hiddenPeriode').value || 'custom';
+
+                    document.getElementById('activePeriodTag').textContent = labels[currentPeriode] || 'Custom';
+
+                    const headerBadge = document.getElementById('headerPeriodeBadge');
+                    const headerDate  = document.getElementById('headerPeriodeDate');
+                    if (headerBadge) {
+                        headerBadge.className = 'periode-badge ' + (cls[currentPeriode] || 'custom');
+                        headerBadge.innerHTML = `<span>${icons[currentPeriode] || '⚪'}</span> ${labels[currentPeriode] || 'Custom'}`;
+                    }
+                    if (headerDate) headerDate.textContent = res.formatted_periode;
 
                     const fmt = (num) => 'Rp' + num.toLocaleString('id-ID').replace(/,/g, '.');
                     document.getElementById('valPemasukan').textContent = fmt(res.data.total_pemasukan);
@@ -342,9 +425,25 @@
                     elLaba.classList.add(laba < 0 ? 'text-danger' : 'text-primary');
 
                     currentLabels = res.data.chart_labels;
-                    dataPemasukan = res.data.chart_pemasukan;
-                    dataLabaBersih = res.data.chart_laba_bersih;
-                    updateChartDisplay();
+                    salesChart.data.labels = currentLabels;
+                    salesChart.data.datasets[0].data = res.data.chart_pemasukan;
+                    salesChart.data.datasets[1].data = res.data.chart_pengeluaran;
+                    salesChart.data.datasets[2].data = res.data.chart_laba_bersih;
+
+                    console.log("=== DATA DITERIMA DARI BACKEND ===");
+                    console.log("Labels:", res.data.chart_labels);
+                    console.log("Pemasukan:", res.data.chart_pemasukan);
+                    console.log("Pengeluaran:", res.data.chart_pengeluaran);
+                    console.log("Laba Bersih:", res.data.chart_laba_bersih);
+                    console.log("==================================");
+
+                    salesChart.update();
+
+                    console.log("=== salesChart.data SETELAH UPDATE ===");
+                    console.log(salesChart.data);
+                    console.log("======================================");
+
+                    checkEmptyState();
 
                     const listContainer = document.getElementById('topProductsList');
                     if (res.data.top_products.length > 0) {
@@ -352,7 +451,17 @@
                         res.data.top_products.forEach((p, idx) => {
                             const i = idx + 1;
                             const rc = i===1?'rank-1':i===2?'rank-2':i===3?'rank-3':'rank-n';
-                            html += `<div class="d-flex align-items-center gap-3"><div class="rank-badge ${rc}">${i}</div><div class="product-avatar"><i class="bi bi-cup-hot"></i></div><div class="flex-grow-1 overflow-hidden"><div class="fw-bold small text-truncate">${p.name}</div><div class="small text-muted">${p.qty} terjual</div></div><div class="fw-bold text-success small">${fmt(p.subtotal)}</div></div>`;
+                            html += `
+                                <div class="d-flex align-items-center gap-3 py-2 border-bottom">
+                                    <div class="rank-badge ${rc} flex-shrink-0">${i}</div>
+                                    <div class="flex-grow-1 overflow-hidden">
+                                        <div class="fw-bold text-truncate" style="font-size: 0.875rem;">${p.name}</div>
+                                        <div class="text-muted" style="font-size: 0.78rem;">
+                                            <span class="me-2"><i class="bi bi-bag-check me-1"></i>${p.qty} terjual</span>
+                                            <span class="text-success fw-semibold">${fmt(p.subtotal)}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
                         });
                         listContainer.innerHTML = html;
                     } else {

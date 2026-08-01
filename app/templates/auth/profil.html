@@ -27,12 +27,12 @@
                 <input type="hidden" name="action" value="update_profile">
 
                 <div class="mb-3">
-                    <label class="form-label fw-semibold small text-secondary">Username</label>
+                    <label for="username" class="form-label fw-semibold small text-secondary">Username <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0 bg-light" value="{{ current_user.username }}" readonly disabled>
+                        <input type="text" class="form-control border-start-0 bg-light" id="username" name="username" value="{{ current_user.username }}" required minlength="4" maxlength="30" pattern="^[a-zA-Z0-9_]+$">
                     </div>
-                    <div class="form-text small text-muted">Username tidak dapat diubah setelah dibuat.</div>
+                    <div class="form-text small text-muted">Minimal 4 karakter, maksimal 30 karakter. Hanya huruf, angka, dan underscore (_). Tidak boleh ada spasi.</div>
                 </div>
 
                 <div class="mb-3">
@@ -78,7 +78,10 @@
                     <label for="old_password" class="form-label fw-semibold small text-secondary">Password Lama <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
-                        <input type="password" class="form-control border-start-0 bg-light" id="old_password" name="old_password" placeholder="Masukkan password lama Anda" required>
+                        <input type="password" class="form-control border-start-0 border-end-0 bg-light" id="old_password" name="old_password" placeholder="Masukkan password lama Anda" required>
+                        <button class="btn btn-outline-secondary bg-light border-start-0 border-top border-bottom border-end toggle-password" type="button" data-target="old_password">
+                            <i class="bi bi-eye text-muted"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -86,7 +89,27 @@
                     <label for="new_password" class="form-label fw-semibold small text-secondary">Password Baru <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-key text-muted"></i></span>
-                        <input type="password" class="form-control border-start-0 bg-light" id="new_password" name="new_password" placeholder="Minimal 8 karakter" required>
+                        <input type="password" class="form-control border-start-0 border-end-0 bg-light" id="new_password" name="new_password" placeholder="Minimal 8 karakter" required>
+                        <button class="btn btn-outline-secondary bg-light border-start-0 border-top border-bottom border-end toggle-password" type="button" data-target="new_password">
+                            <i class="bi bi-eye text-muted"></i>
+                        </button>
+                    </div>
+                    <!-- Password Hint -->
+                    <div class="mt-2 small text-muted" id="password_hint">
+                        Password harus: <br>
+                        <span id="hint_length" class="text-danger"><i class="bi bi-x-circle me-1"></i>Minimal 8 karakter</span> <br>
+                        <span id="hint_letter" class="text-danger"><i class="bi bi-x-circle me-1"></i>Mengandung minimal 1 huruf</span> <br>
+                        <span id="hint_number" class="text-danger"><i class="bi bi-x-circle me-1"></i>Mengandung minimal 1 angka</span>
+                    </div>
+                    <!-- Password Strength -->
+                    <div class="mt-2 d-none" id="password_strength_container">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted" style="font-size: 0.75rem;">Kekuatan Password:</small>
+                            <small id="password_strength_text" class="fw-bold" style="font-size: 0.75rem;">Lemah</small>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div id="password_strength_bar" class="progress-bar bg-danger" role="progressbar" style="width: 33%" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -94,8 +117,12 @@
                     <label for="confirm_password" class="form-label fw-semibold small text-secondary">Konfirmasi Password Baru <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-check2-circle text-muted"></i></span>
-                        <input type="password" class="form-control border-start-0 bg-light" id="confirm_password" name="confirm_password" placeholder="Ulangi password baru Anda" required>
+                        <input type="password" class="form-control border-start-0 border-end-0 bg-light" id="confirm_password" name="confirm_password" placeholder="Ulangi password baru Anda" required>
+                        <button class="btn btn-outline-secondary bg-light border-start-0 border-top border-bottom border-end toggle-password" type="button" data-target="confirm_password">
+                            <i class="bi bi-eye text-muted"></i>
+                        </button>
                     </div>
+                    <div class="form-text small text-danger d-none" id="confirm_hint">Konfirmasi password tidak cocok.</div>
                 </div>
 
                 <div class="text-end">
@@ -108,4 +135,112 @@
 
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show/Hide Password
+    const toggleBtns = document.querySelectorAll('.toggle-password');
+    toggleBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+
+    // Password Validation and Strength
+    const newPassword = document.getElementById('new_password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const hintLength = document.getElementById('hint_length');
+    const hintLetter = document.getElementById('hint_letter');
+    const hintNumber = document.getElementById('hint_number');
+    const strengthContainer = document.getElementById('password_strength_container');
+    const strengthBar = document.getElementById('password_strength_bar');
+    const strengthText = document.getElementById('password_strength_text');
+    const confirmHint = document.getElementById('confirm_hint');
+
+    function updateCheckmark(element, isValid) {
+        if (isValid) {
+            element.classList.remove('text-danger');
+            element.classList.add('text-success');
+            element.innerHTML = '<i class="bi bi-check-circle me-1"></i>' + element.innerText.trim();
+        } else {
+            element.classList.remove('text-success');
+            element.classList.add('text-danger');
+            element.innerHTML = '<i class="bi bi-x-circle me-1"></i>' + element.innerText.trim();
+        }
+    }
+
+    newPassword.addEventListener('input', function() {
+        const val = this.value;
+        
+        // Show container if there is typing
+        if (val.length > 0) {
+            strengthContainer.classList.remove('d-none');
+        } else {
+            strengthContainer.classList.add('d-none');
+        }
+
+        // Rules checking
+        const hasLength = val.length >= 8;
+        const hasLetter = /[a-zA-Z]/.test(val);
+        const hasNumber = /\d/.test(val);
+
+        updateCheckmark(hintLength, hasLength);
+        updateCheckmark(hintLetter, hasLetter);
+        updateCheckmark(hintNumber, hasNumber);
+
+        // Strength calculation
+        let strength = 0;
+        if (hasLength) strength += 1;
+        if (hasLetter) strength += 1;
+        if (hasNumber) strength += 1;
+        
+        // Bonus for extra complexity
+        if (val.length > 10 && /[A-Z]/.test(val) && /[^a-zA-Z0-9]/.test(val)) {
+            strength = 4;
+        }
+
+        strengthBar.className = 'progress-bar'; // reset
+        if (strength <= 1) {
+            strengthBar.style.width = '33%';
+            strengthBar.classList.add('bg-danger');
+            strengthText.innerText = 'Lemah';
+            strengthText.className = 'fw-bold text-danger';
+        } else if (strength === 2) {
+            strengthBar.style.width = '66%';
+            strengthBar.classList.add('bg-warning');
+            strengthText.innerText = 'Cukup';
+            strengthText.className = 'fw-bold text-warning';
+        } else {
+            strengthBar.style.width = '100%';
+            strengthBar.classList.add('bg-success');
+            strengthText.innerText = 'Baik';
+            strengthText.className = 'fw-bold text-success';
+        }
+        
+        checkConfirmPassword();
+    });
+
+    confirmPassword.addEventListener('input', checkConfirmPassword);
+
+    function checkConfirmPassword() {
+        if (confirmPassword.value.length > 0 && confirmPassword.value !== newPassword.value) {
+            confirmHint.classList.remove('d-none');
+        } else {
+            confirmHint.classList.add('d-none');
+        }
+    }
+});
+</script>
 {% endblock %}

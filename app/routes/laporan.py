@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, send_file, jsonify, current_app
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models.sale import Sale
@@ -11,7 +11,8 @@ from zoneinfo import ZoneInfo
 import calendar
 import io
 import openpyxl
-
+import os
+from openpyxl.styles import Font, Alignment
 # PDF Export imports
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -191,12 +192,14 @@ def get_report_data(active_biz, start_wib, end_wib, periode):
         _add_to_dict(chart_pengeluaran, dt_wib, e.amount, grouping)
 
     data_pemasukan = []
+    data_pengeluaran_list = []
     data_laba_bersih = []
     
     for lbl in labels:
         p = chart_pemasukan.get(lbl, 0)
         e = chart_pengeluaran.get(lbl, 0)
         data_pemasukan.append(p)
+        data_pengeluaran_list.append(e)
         data_laba_bersih.append(p - e)
 
     return {
@@ -206,10 +209,30 @@ def get_report_data(active_biz, start_wib, end_wib, periode):
         'top_products': top_products_list,
         'chart_labels': labels,
         'chart_pemasukan': data_pemasukan,
+        'chart_pengeluaran': data_pengeluaran_list,
         'chart_laba_bersih': data_laba_bersih,
         'sales': sales,
         'expenses': expenses
     }
+
+def format_periode_id(start_date, end_date, periode):
+    bulan_full = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    bulan_short = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+
+    if periode == 'hari_ini':
+        return f"{start_date.day} {bulan_full[start_date.month]} {start_date.year}"
+    elif periode == 'bulan_ini':
+        return f"{bulan_full[start_date.month]} {start_date.year}"
+    elif periode == 'tahun_ini':
+        return f"{start_date.year}"
+    else:
+        if start_date.year == end_date.year and start_date.month == end_date.month:
+            if start_date.day == end_date.day:
+                return f"{start_date.day} {bulan_full[start_date.month]} {start_date.year}"
+            return f"{start_date.day}–{end_date.day} {bulan_full[start_date.month]} {start_date.year}"
+        else:
+            return f"{start_date.day} {bulan_short[start_date.month]} {start_date.year} – {end_date.day} {bulan_short[end_date.month]} {end_date.year}"
+
 
 @laporan_bp.route('/', methods=['GET'])
 @login_required
@@ -223,6 +246,7 @@ def index():
 
     start_wib, end_wib, periode = get_date_range(periode, start_str, end_str)
     
+    formatted_periode = format_periode_id(start_wib, end_wib, periode)
     data = get_report_data(active_biz, start_wib, end_wib, periode)
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -234,6 +258,7 @@ def index():
             'periode': periode,
             'start_date': start_wib.strftime('%Y-%m-%d'),
             'end_date': end_wib.strftime('%Y-%m-%d'),
+            'formatted_periode': formatted_periode,
             'data': data
         })
 
@@ -243,8 +268,128 @@ def index():
         periode=periode,
         start_date=start_wib.strftime('%Y-%m-%d'),
         end_date=end_wib.strftime('%Y-%m-%d'),
+        formatted_periode=formatted_periode,
         data=data
     )
+
+def _generate_daily_rekap(start_wib, end_wib, data):
+    rekap = {}
+    curr = start_wib.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_date = end_wib.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    while curr <= end_date:
+        key = curr.strftime('%Y-%m-%d')
+        rekap[key] = {'pemasukan': 0.0, 'pengeluaran': 0.0, 'date_obj': curr}
+        curr += timedelta(days=1)
+        
+    for s in data.get('sales', []):
+        dt_wib = from_utc_naive(s.transaction_date)
+        key = dt_wib.strftime('%Y-%m-%d')
+        if key in rekap:
+            rekap[key]['pemasukan'] += float(s.total)
+            
+    for e in data.get('expenses', []):
+        dt_wib = from_utc_naive(e.expense_date)
+        key = dt_wib.strftime('%Y-%m-%d')
+        if key in rekap:
+            rekap[key]['pengeluaran'] += float(e.amount)
+            
+    sorted_rekap = []
+    for key in sorted(rekap.keys()):
+        val = rekap[key]
+        p = val['pemasukan']
+        e = val['pengeluaran']
+        laba = p - e
+        sorted_rekap.append({
+            'tanggal': val['date_obj'].strftime('%d %b %Y'),
+            'pemasukan': p,
+            'pengeluaran': e,
+            'laba_bersih': laba
+        })
+    return sorted_rekap
+
+def _create_header_footer_watermark(start_wib, end_wib, active_biz):
+    def on_page(canvas, doc):
+        canvas.saveState()
+        
+        # --- WATERMARK ---
+        canvas.setFont('Helvetica-Bold', 60)
+        canvas.setFillColorRGB(0.9, 0.9, 0.9, alpha=0.5)
+        canvas.translate(297.5, 420.5)
+        canvas.rotate(45)
+        canvas.drawCentredString(0, 0, "SIWARUK")
+        canvas.rotate(-45)
+        canvas.translate(-297.5, -420.5)
+        
+        # --- FOOTER ---
+        canvas.setFont('Helvetica', 9)
+        canvas.setFillColorRGB(0.5, 0.5, 0.5)
+        canvas.drawString(30, 20, "Dibuat menggunakan aplikasi Siwaruk")
+        canvas.drawRightString(A4[0] - 30, 20, f"Halaman {doc.page}")
+        
+        canvas.restoreState()
+    return on_page
+
+def _add_excel_header(ws, start_wib, end_wib, active_biz, report_title, add_logo=False):
+    months = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    
+    d1 = f"{start_wib.day} {months[start_wib.month]} {start_wib.year}"
+    d2 = f"{end_wib.day} {months[end_wib.month]} {end_wib.year}"
+    period_text = d1 if d1 == d2 else f"{d1} – {d2}"
+    
+    export_wib = datetime.now(_WIB)
+    export_d = f"{export_wib.day} {months[export_wib.month]} {export_wib.year}"
+    export_t = export_wib.strftime('%H.%M')
+
+    if add_logo:
+        ws.column_dimensions['A'].width = 16
+        ws.row_dimensions[1].height = 24
+        ws.row_dimensions[2].height = 20
+        
+        ws.append(["", report_title])
+        ws.append(["", active_biz.business_name])
+        ws.append(["", ""])
+        ws.append(["", f"Periode: {period_text}"])
+        ws.append(["", f"Tanggal Export: {export_d} • {export_t} WIB"])
+        ws.append([])
+        
+        for r in (1, 2, 4, 5):
+            ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=5)
+            ws.cell(row=r, column=2).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            
+        ws['B1'].font = Font(bold=True, size=15)
+        ws['B2'].font = Font(bold=True, size=13)
+        ws['B4'].font = Font(size=11)
+        ws['B5'].font = Font(size=9, italic=True)
+        
+        logo_path = os.path.join(current_app.root_path, 'static', 'img', 'logo-siwaruk.png')
+        if os.path.exists(logo_path):
+            try:
+                from openpyxl.drawing.image import Image as ExcelImage
+                img = ExcelImage(logo_path)
+                aspect = img.width / img.height
+                img.height = 55
+                img.width = 55 * aspect
+                img.anchor = 'A1'
+                ws.add_image(img)
+            except:
+                pass
+    else:
+        ws.append([report_title])
+        ws.append([active_biz.business_name])
+        ws.append([])
+        ws.append([f"Periode: {period_text}"])
+        ws.append([f"Tanggal Export: {export_d} • {export_t} WIB"])
+        ws.append([])
+        
+        for r in (1, 2, 4, 5):
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+            ws.cell(row=r, column=1).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            
+        ws['A1'].font = Font(bold=True, size=15)
+        ws['A2'].font = Font(bold=True, size=13)
+        ws['A4'].font = Font(size=11)
+        ws['A5'].font = Font(size=9, italic=True)
 
 @laporan_bp.route('/export/pdf', methods=['GET'])
 @login_required
@@ -257,13 +402,39 @@ def export_pdf():
     data = get_report_data(active_biz, start_wib, end_wib, periode)
 
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=40, bottomMargin=50)
     elements = []
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], alignment=TA_CENTER)
     
-    elements.append(Paragraph(f"Laporan Keuangan - {active_biz.business_name}", title_style))
-    elements.append(Paragraph(f"Periode: {start_wib.strftime('%d %b %Y')} - {end_wib.strftime('%d %b %Y')}", styles['Normal']))
+    # --- PDF HEADER IN ELEMENTS ---
+    logo_path = os.path.join(current_app.root_path, 'static', 'img', 'logo-siwaruk.png')
+    if os.path.exists(logo_path):
+        try:
+            from reportlab.platypus import Image as RLImage
+            img = RLImage(logo_path, width=60, height=60, kind='proportional')
+            img.hAlign = 'CENTER'
+            elements.append(img)
+            elements.append(Spacer(1, 10))
+        except:
+            pass
+            
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], alignment=TA_CENTER, fontSize=16, spaceAfter=8)
+    elements.append(Paragraph(f"Laporan Keuangan {active_biz.business_name}", title_style))
+    
+    months = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+    d1 = f"{start_wib.day} {months[start_wib.month]} {start_wib.year}"
+    d2 = f"{end_wib.day} {months[end_wib.month]} {end_wib.year}"
+    period_text = d1 if d1 == d2 else f"{d1} – {d2}"
+    
+    period_style = ParagraphStyle('PeriodStyle', parent=styles['Normal'], alignment=TA_CENTER, fontSize=12, spaceAfter=4, leading=14)
+    elements.append(Paragraph(f"Periode<br/>{period_text}", period_style))
+    
+    export_wib = datetime.now(_WIB)
+    export_d = f"{export_wib.day} {months[export_wib.month]} {export_wib.year}"
+    export_t = export_wib.strftime('%H.%M')
+    export_style = ParagraphStyle('ExportStyle', parent=styles['Normal'], alignment=TA_CENTER, fontSize=10, textColor=colors.dimgrey, leading=12)
+    elements.append(Paragraph(f"Tanggal Export<br/>{export_d} &bull; {export_t} WIB", export_style))
+    
     elements.append(Spacer(1, 20))
 
     # Ringkasan
@@ -281,6 +452,29 @@ def export_pdf():
     ]))
     elements.append(t)
     
+    # Rekap Harian
+    daily_rekap = _generate_daily_rekap(start_wib, end_wib, data)
+    if daily_rekap:
+        elements.append(Spacer(1, 20))
+        elements.append(Paragraph("Rekap Harian", styles['Heading3']))
+        
+        rekap_table_data = [['Tanggal', 'Total Pemasukan', 'Total Pengeluaran', 'Laba Bersih']]
+        for row in daily_rekap:
+            rekap_table_data.append([
+                row['tanggal'],
+                f"Rp {int(row['pemasukan']):,}".replace(',', '.'),
+                f"Rp {int(row['pengeluaran']):,}".replace(',', '.'),
+                f"Rp {int(row['laba_bersih']):,}".replace(',', '.')
+            ])
+            
+        rt = Table(rekap_table_data, colWidths=[120, 130, 130, 130])
+        rt.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('PADDING', (0,0), (-1,-1), 6)
+        ]))
+        elements.append(rt)
+
     # Top Products
     if data['top_products']:
         elements.append(Spacer(1, 20))
@@ -297,7 +491,8 @@ def export_pdf():
         ]))
         elements.append(pt)
 
-    doc.build(elements)
+    on_page_func = _create_header_footer_watermark(start_wib, end_wib, active_biz)
+    doc.build(elements, onFirstPage=on_page_func, onLaterPages=on_page_func)
     buffer.seek(0)
     
     filename = f"Laporan_{start_wib.strftime('%Y%m%d')}_{end_wib.strftime('%Y%m%d')}.pdf"
@@ -318,29 +513,38 @@ def export_excel():
     # Sheet 1: Ringkasan
     ws_sum = wb.active
     ws_sum.title = "Ringkasan"
-    ws_sum.append(["Laporan Keuangan", active_biz.business_name])
-    ws_sum.append(["Periode", f"{start_wib.strftime('%d %b %Y')} - {end_wib.strftime('%d %b %Y')}"])
-    ws_sum.append([])
+    _add_excel_header(ws_sum, start_wib, end_wib, active_biz, "Laporan Keuangan", add_logo=True)
     ws_sum.append(["Keterangan", "Total (Rp)"])
     ws_sum.append(["Total Pemasukan", float(data['total_pemasukan'])])
     ws_sum.append(["Total Pengeluaran", float(data['total_pengeluaran'])])
     ws_sum.append(["Laba Bersih", float(data['laba_bersih'])])
 
-    # Sheet 2: Produk Terlaris
+    # Sheet 2: Rekap Harian
+    daily_rekap = _generate_daily_rekap(start_wib, end_wib, data)
+    ws_rekap = wb.create_sheet("Rekap Harian")
+    _add_excel_header(ws_rekap, start_wib, end_wib, active_biz, "Rekap Harian")
+    ws_rekap.append(["Tanggal", "Total Pemasukan (Rp)", "Total Pengeluaran (Rp)", "Laba Bersih (Rp)"])
+    for row in daily_rekap:
+        ws_rekap.append([row['tanggal'], float(row['pemasukan']), float(row['pengeluaran']), float(row['laba_bersih'])])
+
+    # Sheet 3: Produk Terlaris
     ws_prod = wb.create_sheet("Produk Terlaris")
+    _add_excel_header(ws_prod, start_wib, end_wib, active_biz, "Produk Terlaris")
     ws_prod.append(["Nama Produk", "Terjual", "Total Penjualan (Rp)"])
     for p in data['top_products']:
         ws_prod.append([p['name'], p['qty'], float(p['subtotal'])])
 
-    # Sheet 3: Riwayat Pemasukan
+    # Sheet 4: Riwayat Pemasukan
     ws_in = wb.create_sheet("Riwayat Pemasukan")
+    _add_excel_header(ws_in, start_wib, end_wib, active_biz, "Riwayat Pemasukan")
     ws_in.append(["No Invoice", "Tanggal", "Metode Pembayaran", "Total (Rp)"])
     for s in data['sales']:
         dt = from_utc_naive(s.transaction_date).strftime('%Y-%m-%d %H:%M')
         ws_in.append([s.invoice_number, dt, s.payment_method, float(s.total)])
 
-    # Sheet 4: Riwayat Pengeluaran
+    # Sheet 5: Riwayat Pengeluaran
     ws_ex = wb.create_sheet("Riwayat Pengeluaran")
+    _add_excel_header(ws_ex, start_wib, end_wib, active_biz, "Riwayat Pengeluaran")
     ws_ex.append(["Keperluan", "Kategori", "Tanggal", "Total (Rp)"])
     for e in data['expenses']:
         dt = from_utc_naive(e.expense_date).strftime('%Y-%m-%d %H:%M')

@@ -50,7 +50,7 @@
                     <i class="bi bi-cash-stack fs-2"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="fw-bold text-dark" style="font-size: 1.1rem; line-height: 1.3;">Rp{{ "{:,.0f}".format(total_omzet|float) }}</div>
+                    <div class="fw-bold text-dark" style="font-size: var(--fs-nominal-md, clamp(0.95rem,3vw,1.125rem)); line-height: 1.3; word-break:break-word;">Rp{{ "{:,.0f}".format(total_omzet|float).replace(',', '.') }}</div>
                     <small class="text-muted">Total Omzet</small>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                     <i class="bi bi-graph-up-arrow fs-2"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="fw-bold {% if total_laba_bersih >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: 1.1rem; line-height: 1.3;">Rp{{ "{:,.0f}".format(total_laba_bersih|float) }}</div>
+                    <div class="fw-bold {% if total_laba_bersih >= 0 %}text-success{% else %}text-danger{% endif %}" style="font-size: var(--fs-nominal-md, clamp(0.95rem,3vw,1.125rem)); line-height: 1.3; word-break:break-word;">Rp{{ "{:,.0f}".format(total_laba_bersih|float).replace(',', '.') }}</div>
                     <small class="text-muted">Total Laba Bersih</small>
                 </div>
             </div>
@@ -95,7 +95,7 @@
                             <small class="text-muted"><i class="bi bi-person me-1"></i>{{ row.owner_name }}</small>
                         </div>
                         <div class="text-end flex-shrink-0">
-                            <div class="fw-bold text-success small">Rp{{ "{:,.0f}".format(row.total_income|float) }}</div>
+                            <div class="fw-bold text-success small">Rp{{ "{:,.0f}".format(row.total_income|float).replace(',', '.') }}</div>
                         </div>
                     </li>
                     {% endfor %}
@@ -179,11 +179,14 @@
 </div>
 
 <!-- Search & Filters -->
-<form method="GET" action="{{ url_for('dashboard.index') }}#akun" class="row g-2 mb-3">
+<form method="GET" action="{{ url_for('dashboard.index') }}#akun" class="row g-2 mb-3" id="searchFilterForm">
     <div class="col-md-4">
-        <div class="input-group">
+        <div class="input-group position-relative">
             <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
-            <input type="text" name="search" class="form-control border-start-0 ps-0" placeholder="Cari nama lengkap, username, atau nomor WhatsApp..." value="{{ search }}">
+            <input type="text" name="search" id="searchInput" class="form-control border-start-0 ps-0" style="padding-right: 35px;" placeholder="Cari nama lengkap, username, atau nomor WhatsApp..." value="{{ search }}" autocomplete="off">
+            <button type="button" id="clearSearchBtn" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted text-decoration-none d-none" style="z-index: 10;">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
     </div>
     <div class="col-md-2">
@@ -211,6 +214,7 @@
     <button type="submit" class="d-none"></button>
 </form>
 
+<div id="accountListContainer">
 <div class="card card-custom border-0 shadow-sm overflow-hidden mb-3">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
@@ -400,7 +404,96 @@
     </nav>
 </div>
 {% endif %}
+</div>
 
+<!-- Script for Real-time Search and Filters -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const form = document.getElementById('searchFilterForm');
+    const container = document.getElementById('accountListContainer');
+    
+    function toggleClearBtn() {
+        if (searchInput.value.length > 0) {
+            clearBtn.classList.remove('d-none');
+        } else {
+            clearBtn.classList.add('d-none');
+        }
+    }
+    
+    toggleClearBtn();
+    
+    let debounceTimer;
+    
+    function fetchResults(resetPage = false) {
+        const url = new URL(form.action);
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+        
+        if (resetPage) {
+            params.set('page', 1);
+        } else {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('page')) {
+                params.set('page', urlParams.get('page'));
+            }
+        }
+        
+        url.search = params.toString();
+        
+        fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContainer = doc.getElementById('accountListContainer');
+                if (newContainer) {
+                    container.innerHTML = newContainer.innerHTML;
+                }
+                history.pushState({}, '', url);
+            });
+    }
+    
+    searchInput.addEventListener('input', function() {
+        toggleClearBtn();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchResults(true), 300);
+    });
+    
+    clearBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        toggleClearBtn();
+        searchInput.focus();
+        fetchResults(true);
+    });
+    
+    const selects = form.querySelectorAll('select');
+    selects.forEach(select => {
+        select.removeAttribute('onchange');
+        select.addEventListener('change', () => fetchResults(true));
+    });
+    
+    container.addEventListener('click', function(e) {
+        const pageLink = e.target.closest('.page-link');
+        if (pageLink && pageLink.href && !pageLink.closest('.disabled')) {
+            e.preventDefault();
+            fetch(pageLink.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(response => response.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContainer = doc.getElementById('accountListContainer');
+                    if (newContainer) {
+                        container.innerHTML = newContainer.innerHTML;
+                        document.getElementById('akun').scrollIntoView({ behavior: 'smooth' });
+                    }
+                    history.pushState({}, '', pageLink.href);
+                });
+        }
+    });
+});
+</script>
 
 <!-- Modal Tambah Akun Owner Baru -->
 <div class="modal fade" id="createAccountModal" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
@@ -543,10 +636,6 @@
 {% else %}
 <!-- Owner Beranda View -->
 
-<div class="mb-3 text-muted small">
-    Selamat datang,
-</div>
-
 {% if not user_businesses or user_businesses|length == 0 %}
 <!-- Empty State: Owner Has Zero Businesses -->
 <div class="card card-custom border-0 shadow-sm p-4 p-md-5 text-center mb-4">
@@ -600,96 +689,164 @@
     </div>
 </div>
 
-<!-- Transaction Summary (Rangkuman Transaksi) -->
+{% if active_business %}
+
+<!-- ─── QUICK ACTIONS ─────────────────────────────────────────────── -->
+<div class="mb-4">
+    <div class="row g-3">
+        <div class="col-4">
+            <a href="{{ url_for('transaksi.pemasukan') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100" style="background: linear-gradient(135deg,#d1fae5,#a7f3d0);">
+                    <div class="mb-2">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success text-white shadow" style="width:52px;height:52px;font-size:1.5rem;">
+                            <i class="bi bi-plus-lg"></i>
+                        </span>
+                    </div>
+                    <div class="fw-bold text-success small lh-sm">Tambah<br>Pemasukan</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-4">
+            <a href="{{ url_for('transaksi.pengeluaran') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100" style="background: linear-gradient(135deg,#fee2e2,#fecaca);">
+                    <div class="mb-2">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger text-white shadow" style="width:52px;height:52px;font-size:1.5rem;">
+                            <i class="bi bi-dash-lg"></i>
+                        </span>
+                    </div>
+                    <div class="fw-bold text-danger small lh-sm">Tambah<br>Pengeluaran</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-4">
+            <a href="{{ url_for('transaksi.riwayat') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 text-center p-3 h-100" style="background: linear-gradient(135deg,#e0e7ff,#c7d2fe);">
+                    <div class="mb-2">
+                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white shadow" style="width:52px;height:52px;font-size:1.5rem;">
+                            <i class="bi bi-clock-history"></i>
+                        </span>
+                    </div>
+                    <div class="fw-bold text-primary small lh-sm">Riwayat<br>Transaksi</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ─── RINGKASAN KEUANGAN ─────────────────────────────────────────── -->
 <div class="mb-4">
     <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="fw-bold mb-0 text-uppercase tracking-wide">Rangkuman Transaksi</h5>
-        <div class="dropdown">
-            <button class="btn btn-sm btn-white border rounded-pill px-3 dropdown-toggle text-secondary fw-semibold" type="button">
-                Hari ini
-            </button>
+        <h5 class="fw-bold mb-0">Ringkasan Keuangan</h5>
+        <!-- Periode Filter -->
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="?periode=hari_ini" class="btn {% if selected_periode == 'hari_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-start-pill px-3">
+                Hari Ini
+            </a>
+            <a href="?periode=minggu_ini" class="btn {% if selected_periode == 'minggu_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} px-3">
+                Minggu
+            </a>
+            <a href="?periode=bulan_ini" class="btn {% if selected_periode == 'bulan_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-end-pill px-3">
+                Bulan
+            </a>
         </div>
     </div>
 
-    <!-- Income & Expense Cards -->
+    <!-- Pemasukan & Pengeluaran -->
     <div class="row g-3 mb-3">
-        <!-- Pemasukan (Light Green Card) -->
         <div class="col-6">
             <div class="p-3 p-md-4 rounded-4 shadow-sm" style="background-color: #DCFCE7; border: 1px solid #BBF7D0;">
                 <small class="text-success-emphasis fw-bold d-block mb-1">Pemasukan</small>
-                <h4 class="fw-extrabold text-success mb-0">Rp10.000.000</h4>
+                <h4 class="fw-extrabold text-success mb-0" style="font-size: clamp(1rem, 4vw, 1.5rem);">
+                    Rp{{ "{:,.0f}".format(summary.pemasukan|float).replace(',', '.') }}
+                </h4>
             </div>
         </div>
-        <!-- Pengeluaran (Light Peach Card) -->
         <div class="col-6">
             <div class="p-3 p-md-4 rounded-4 shadow-sm" style="background-color: #FFEDD5; border: 1px solid #FED7AA;">
                 <small class="text-danger-emphasis fw-bold d-block mb-1">Pengeluaran</small>
-                <h4 class="fw-extrabold text-danger mb-0">Rp6.000.000</h4>
+                <h4 class="fw-extrabold text-danger mb-0" style="font-size: clamp(1rem, 4vw, 1.5rem);">
+                    Rp{{ "{:,.0f}".format(summary.pengeluaran|float).replace(',', '.') }}
+                </h4>
             </div>
         </div>
     </div>
 
-    <!-- Saldo Bersih Card (Light Blue Card) -->
+    <!-- Laba Bersih -->
     <div class="row g-3">
         <div class="col-12">
-            <div class="p-3 p-md-4 rounded-4 shadow-sm d-flex align-items-center justify-content-between" style="background-color: #E0F2FE; border: 1px solid #BAE6FD;">
-                <span class="text-primary-emphasis fw-bold fs-6">Saldo Bersih</span>
-                <h4 class="fw-extrabold text-primary mb-0">Rp4.000.000</h4>
+            {% set laba = summary.laba_bersih|float %}
+            <div class="p-3 p-md-4 rounded-4 shadow-sm d-flex align-items-center justify-content-between"
+                 style="background-color: {% if laba >= 0 %}#E0F2FE; border: 1px solid #BAE6FD;{% else %}#FEE2E2; border: 1px solid #FECACA;{% endif %}">
+                <span class="{% if laba >= 0 %}text-primary-emphasis{% else %}text-danger-emphasis{% endif %} fw-bold fs-6">Laba Bersih</span>
+                <h4 class="fw-extrabold {% if laba >= 0 %}text-primary{% else %}text-danger{% endif %} mb-0" style="font-size: clamp(1rem, 4vw, 1.5rem);">
+                    Rp{{ "{:,.0f}".format(laba).replace(',', '.') }}
+                </h4>
             </div>
         </div>
     </div>
-</div>
-
-<!-- Transaksi Terbaru Table -->
-<div class="mb-5">
-    <h5 class="fw-bold mb-3 text-uppercase tracking-wide">Transaksi Terbaru</h5>
-    <div class="card card-custom border-0 shadow-sm overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light text-muted small text-uppercase">
-                    <tr>
-                        <th scope="col" class="ps-3 py-3">Waktu</th>
-                        <th scope="col" class="py-3">Item</th>
-                        <th scope="col" class="py-3">Jumlah</th>
-                        <th scope="col" class="pe-3 py-3 text-end">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td colspan="4" class="text-center py-4 text-muted small">
-                            Belum ada transaksi tercatat untuk usaha ini.
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <div class="mt-2 text-end">
+        <a href="{{ url_for('laporan.index', periode=selected_periode) }}" class="small text-primary text-decoration-none fw-semibold">
+            Lihat Laporan Lengkap <i class="bi bi-arrow-right ms-1"></i>
+        </a>
     </div>
 </div>
 
-<!-- Circular Quick Action Buttons (Matching Image 1 Mockup) -->
-<div class="d-flex justify-content-center gap-4 py-3 mb-4">
-    <a href="#" class="text-decoration-none text-center group">
-        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white shadow"
-             style="width: 110px; height: 110px; background-color: var(--primary-color);">
-            <i class="bi bi-journal-bookmark fs-1"></i>
+<!-- ─── TRANSAKSI TERBARU ──────────────────────────────────────────── -->
+<div class="mb-5">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="fw-bold mb-0">Transaksi Terbaru</h5>
+        <a href="{{ url_for('transaksi.riwayat') }}" class="small text-primary text-decoration-none fw-semibold">
+            Lihat Semua <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card card-custom border-0 shadow-sm overflow-hidden">
+        {% if recent_sales %}
+        <ul class="list-group list-group-flush">
+            {% for s in recent_sales %}
+            <li class="list-group-item px-3 py-3 border-0 border-bottom">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="flex-shrink-0 rounded-circle bg-success-subtle text-success d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                        <i class="bi bi-cart-check fs-5"></i>
+                    </div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-bold text-dark small">{{ s.invoice_number }}</div>
+                        <div class="small text-muted" style="font-size: 0.8rem;">
+                            <i class="bi bi-clock me-1"></i>{{ (s.transaction_date | to_wib).strftime('%d %b %Y, %H:%M WIB') }}
+                            {% if s.payment_method %}
+                            <span class="mx-1">•</span><i class="bi bi-credit-card me-1"></i>{{ s.payment_method }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end flex-shrink-0">
+                        <div class="fw-bold text-success small">Rp{{ "{:,.0f}".format(s.total|float).replace(',', '.') }}</div>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="text-center py-5 text-muted small">
+            <i class="bi bi-receipt display-4 d-block text-light mb-2"></i>
+            Belum ada transaksi pada periode ini.
         </div>
-        <span class="small fw-bold text-secondary d-block" style="width: 120px; line-height: 1.2;">
-            Lihat semua transaksi
-        </span>
-    </a>
+        {% endif %}
+    </div>
+</div>
 
-    <a href="#" class="text-decoration-none text-center group">
-        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 text-white shadow"
-             style="width: 110px; height: 110px; background-color: var(--primary-color);">
-            <i class="bi bi-plus-lg fs-1"></i>
-        </div>
-        <span class="small fw-bold text-secondary d-block" style="width: 120px; line-height: 1.2;">
-            Tambah transaksi
-        </span>
-    </a>
+{% else %}
+<!-- No active business selected -->
+<div class="card card-custom border-0 shadow-sm p-4 text-center mb-4">
+    <div class="py-3">
+        <i class="bi bi-shop display-4 text-muted d-block mb-3"></i>
+        <h5 class="fw-bold text-dark mb-2">Pilih usaha terlebih dahulu</h5>
+        <p class="text-muted small mb-0">Gunakan dropdown di atas untuk memilih usaha yang ingin Anda kelola.</p>
+    </div>
 </div>
 
 {% endif %}
+
+{% endif %}
+
 {% endif %}
 
 {% endblock %}
