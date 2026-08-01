@@ -136,21 +136,39 @@
     </header>
 
     {% if current_user.is_authenticated %}
-    <!-- Unified 3-Item Navigation Menu Bar -->
+    <!-- Role-Based Navigation Menu Bar -->
     <nav class="main-nav-bar">
         <div class="container px-0 px-md-3">
+            {% if current_user.role == 'admin' %}
+            <!-- Admin Navigation -->
             <div class="d-flex align-items-center justify-content-around justify-content-md-start">
-                <a href="{{ url_for('dashboard.index') }}" 
+                <a href="{{ url_for('dashboard.index') }}"
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
                     Beranda
                 </a>
-                <a href="{{ url_for('usaha.kelola') }}" 
+                <a href="{{ url_for('dashboard.index') }}#akun"
+                   class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}">
+                    Manajemen Akun
+                </a>
+                <a href="{{ url_for('auth.profil') }}"
+                   class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'auth.profil' %}active{% endif %}">
+                    Profil Saya
+                </a>
+            </div>
+            {% else %}
+            <!-- Owner Navigation -->
+            <div class="d-flex align-items-center justify-content-around justify-content-md-start">
+                <a href="{{ url_for('dashboard.index') }}"
+                   class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                    Beranda
+                </a>
+                <a href="{{ url_for('usaha.kelola') }}"
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'usaha.kelola' %}active{% endif %}">
                     Kelola Usaha
                 </a>
-                
+
                 <div class="nav-item dropdown flex-fill flex-md-grow-0 text-center">
-                    <a class="nav-link-item w-100 dropdown-toggle {% if 'transaksi' in request.endpoint %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link-item w-100 dropdown-toggle {% if 'transaksi' in (request.endpoint or '') %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         Kelola Transaksi
                     </a>
                     <ul class="dropdown-menu shadow border-0 mt-0" style="border-radius: 0.5rem;">
@@ -161,14 +179,16 @@
                     </ul>
                 </div>
 
-                <a href="{{ url_for('auth.profil') }}" 
+                <a href="{{ url_for('auth.profil') }}"
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'auth.profil' %}active{% endif %}">
                     Profil Saya
                 </a>
             </div>
+            {% endif %}
         </div>
     </nav>
     {% endif %}
+
 
     <!-- Main Content Container -->
     <main class="py-4">

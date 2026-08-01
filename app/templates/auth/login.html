@@ -45,6 +45,7 @@
 
             <!-- Login help links -->
             <div class="text-center mt-3 small">
+                {% if wa_register_link and wa_forgot_password_link %}
                 <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
                     <a href="{{ wa_register_link }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-secondary">
                         Belum punya akun?
@@ -54,6 +55,9 @@
                         Lupa kata sandi?
                     </a>
                 </div>
+                {% else %}
+                <span class="text-muted"><i class="bi bi-exclamation-circle me-1"></i> Admin belum mengatur nomor kontak bantuan.</span>
+                {% endif %}
             </div>
 
             <div class="text-center mt-4 pt-3 border-top">

@@ -9,7 +9,6 @@ REGISTER_MESSAGE = (
     "Halo Admin Siwaruk,\n\n"
     "Saya ingin mengajukan pembuatan akun Siwaruk.\n\n"
     "Nama:\n"
-    "Nama Usaha:\n"
     "Nomor WhatsApp:\n\n"
     "Terima kasih."
 )
@@ -18,9 +17,48 @@ FORGOT_PASSWORD_MESSAGE = (
     "Halo Admin Siwaruk,\n\n"
     "Saya mengalami kendala login dan ingin melakukan reset password.\n\n"
     "Username:\n"
-    "Nama Usaha:\n\n"
     "Terima kasih."
 )
+
+
+def normalize_whatsapp_number(phone: str) -> str:
+    """
+    Normalizes a phone number to standard Indonesian WhatsApp format (628...).
+    Handles inputs like 0812..., 62812..., +62812...
+    """
+    if not phone:
+        return ""
+    
+    # Remove all non-digit and non-plus characters
+    cleaned = re.sub(r'[^\d+]', '', phone)
+    
+    if cleaned.startswith('+'):
+        cleaned = cleaned[1:]
+        
+    if cleaned.startswith('0'):
+        cleaned = '62' + cleaned[1:]
+        
+    return cleaned
+
+
+def is_valid_whatsapp_number(phone: str) -> bool:
+    """
+    Validates if a phone number is a valid WhatsApp number.
+    Must contain only digits (and optional leading +), and have reasonable length (9-15 digits).
+    """
+    if not phone:
+        return False
+    
+    # Must only contain digits and optional leading +
+    if not re.match(r'^\+?\d+$', phone):
+        return False
+        
+    # Check length of digits
+    digits_only = re.sub(r'\D', '', phone)
+    if len(digits_only) < 9 or len(digits_only) > 15:
+        return False
+        
+    return True
 
 
 def get_whatsapp_link(message_type: str) -> str:
@@ -30,7 +68,11 @@ def get_whatsapp_link(message_type: str) -> str:
     :param message_type: 'register' or 'forgot_password'
     :return: Full WhatsApp URL string with pre-filled encoded text message.
     """
-    wa_number = current_app.config.get("WHATSAPP_ADMIN", "628xxxxxxxxxx")
+    admin_user = User.query.filter_by(role='admin').first()
+    if not admin_user or not admin_user.phone:
+        return ""
+
+    wa_number = normalize_whatsapp_number(admin_user.phone)
 
     if message_type == "register":
         message_text = REGISTER_MESSAGE

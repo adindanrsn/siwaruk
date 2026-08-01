@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
 from app.models.user import User
+from app.utils import is_valid_whatsapp_number
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -71,6 +72,14 @@ def profil():
             if not full_name:
                 flash('Nama Lengkap tidak boleh kosong.', 'danger')
                 return render_template('auth/profil.html')
+
+            if current_user.role == 'admin':
+                if not phone:
+                    flash('Nomor WhatsApp wajib diisi oleh Admin.', 'danger')
+                    return render_template('auth/profil.html')
+                if not is_valid_whatsapp_number(phone):
+                    flash('Format Nomor WhatsApp tidak valid. Gunakan angka saja (boleh diawali +) dengan panjang 9-15 karakter.', 'danger')
+                    return render_template('auth/profil.html')
 
             current_user.full_name = full_name
             current_user.phone = phone or None

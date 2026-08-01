@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan Keuangan - Siwaruk{% endblock %}
+
+{% block head %}
+<style>
+    .chart-container {
+        position: relative;
+        min-height: 320px;
+    }
+    
+    .product-avatar {
+        width: 44px; height: 44px; border-radius: 0.5rem; background: var(--bg-color);
+        display: flex; align-items: center; justify-content: center; color: var(--primary-color); font-size: 1.25rem;
+    }
+    
+    .rank-badge {
+        width: 28px; height: 28px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+    }
+    .rank-1 { background: #facc15; color: #fff; }
+    .rank-2 { background: #cbd5e1; color: #fff; }
+    .rank-3 { background: #d97706; color: #fff; }
+    .rank-n { background: #f1f5f9; color: #64748b; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('usaha.kelola') }}" class="text-decoration-none text-secondary fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i> Kembali ke Kelola Usaha
+    </a>
+</div>
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h4 class="fw-bold mb-1">Laporan Keuangan</h4>
+        <p class="text-muted small mb-0">Ringkasan keuangan usaha {{ active_business.business_name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a id="btnExportPdf"
+           href="{{ url_for('laporan.export_pdf', periode=periode, start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}"
+           class="btn btn-outline-danger btn-sm rounded-pill fw-semibold px-3" target="_blank">
+            <i class="bi bi-file-earmark-pdf-fill"></i> Export PDF
+        </a>
+        <a id="btnExportExcel"
+           href="{{ url_for('laporan.export_excel', periode=periode, start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}"
+           class="btn btn-outline-success btn-sm rounded-pill fw-semibold px-3">
+            <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-xl-4">
+        <div class="card-custom h-100 p-3">
+            <div class="small fw-bold text-secondary mb-3">Periode Aktif</div>
+            <div class="d-inline-flex align-items-center gap-2 bg-light p-2 px-3 rounded-3 border">
+                <i class="bi bi-calendar3 text-primary"></i>
+                <span class="fw-bold small" id="activePeriodBadge">{{ start_date }} - {{ end_date }}</span>
+                <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-3" id="activePeriodTag">
+                    {% if periode == 'hari_ini' %}Hari Ini
+                    {% elif periode == 'minggu_ini' %}Minggu Ini
+                    {% elif periode == 'bulan_ini' %}Bulan Ini
+                    {% elif periode == 'tahun_ini' %}Tahun Ini
+                    {% else %}Custom{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-8">
+        <div class="card-custom h-100 p-3">
+            <div class="small fw-bold text-secondary mb-3">Pilih Periode</div>
+            <form method="GET" action="{{ url_for('laporan.index') }}" id="filterForm">
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" name="periode" value="hari_ini"  class="btn btn-sm {% if periode=='hari_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} fw-semibold btn-seg"><i class="bi bi-calendar-day"></i> Hari Ini</button>
+                    <button type="submit" name="periode" value="minggu_ini" class="btn btn-sm {% if periode=='minggu_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} fw-semibold btn-seg"><i class="bi bi-calendar-week"></i> Minggu Ini</button>
+                    <button type="submit" name="periode" value="bulan_ini"  class="btn btn-sm {% if periode=='bulan_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} fw-semibold btn-seg"><i class="bi bi-calendar-month"></i> Bulan Ini</button>
+                    <button type="submit" name="periode" value="tahun_ini"  class="btn btn-sm {% if periode=='tahun_ini' %}btn-primary{% else %}btn-outline-secondary{% endif %} fw-semibold btn-seg"><i class="bi bi-calendar"></i> Tahun Ini</button>
+                    <button type="button" class="btn btn-sm {% if periode=='custom' %}btn-primary{% else %}btn-outline-secondary{% endif %} fw-semibold btn-seg" onclick="toggleCustomDate(event)"><i class="bi bi-calendar-range"></i> Custom</button>
+                </div>
+
+                <div id="customDateWrap" class="bg-light border rounded-3 p-3 mt-3 {% if periode != 'custom' %}d-none{% endif %}">
+                    <input type="hidden" name="periode" id="hiddenPeriode" value="{{ periode }}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-12 col-sm-5">
+                            <label class="form-label small fw-bold text-secondary mb-1">Tanggal Awal</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
+                                <input type="date" name="start_date" class="form-control" value="{{ request.args.get('start_date', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-5">
+                            <label class="form-label small fw-bold text-secondary mb-1">Tanggal Akhir</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white"><i class="bi bi-calendar3"></i></span>
+                                <input type="date" name="end_date" class="form-control" value="{{ request.args.get('end_date', '') }}">
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-2">
+                            <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold" onclick="setCustomPeriode()"><i class="bi bi-funnel"></i> Tampilkan</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-4">
+        <div class="card-custom p-4 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; font-size: 1.75rem; flex-shrink: 0;">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div>
+                <div class="small fw-semibold text-secondary mb-1">Total Pemasukan</div>
+                <h4 class="fw-extrabold text-success mb-0" id="valPemasukan">Rp{{ "{:,.0f}".format(data.total_pemasukan).replace(',', '.') }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card-custom p-4 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="bg-danger bg-opacity-10 text-danger rounded-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; font-size: 1.75rem; flex-shrink: 0;">
+                <i class="bi bi-box-arrow-down"></i>
+            </div>
+            <div>
+                <div class="small fw-semibold text-secondary mb-1">Total Pengeluaran</div>
+                <h4 class="fw-extrabold text-danger mb-0" id="valPengeluaran">Rp{{ "{:,.0f}".format(data.total_pengeluaran).replace(',', '.') }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card-custom p-4 d-flex flex-row align-items-center gap-3 h-100">
+            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px; font-size: 1.75rem; flex-shrink: 0;">
+                <i class="bi bi-bar-chart-line-fill"></i>
+            </div>
+            <div>
+                <div class="small fw-semibold text-secondary mb-1">Laba Bersih</div>
+                <h4 class="fw-extrabold {% if data.laba_bersih < 0 %}text-danger{% else %}text-primary{% endif %} mb-0" id="valLaba">
+                    {% if data.laba_bersih < 0 %}-{% endif %}Rp{{ "{:,.0f}".format(data.laba_bersih | abs).replace(',', '.') }}
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-12 col-lg-7 col-xl-8">
+        <div class="card-custom p-4 h-100 d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <h6 class="fw-bold mb-0">Grafik Keuangan</h6>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-primary active chart-tab" id="btnTabPemasukan" onclick="switchChartTab('pemasukan')">Pemasukan</button>
+                    <button type="button" class="btn btn-outline-primary chart-tab" id="btnTabLaba" onclick="switchChartTab('laba_bersih')">Laba Bersih</button>
+                </div>
+            </div>
+            <div class="chart-container flex-grow-1">
+                <div id="chartEmptyState" class="position-absolute top-50 start-50 translate-middle text-center text-muted d-none">
+                    <i class="bi bi-graph-down mb-2 fs-2"></i>
+                    <p class="mb-0 small">Belum ada data pada periode ini.</p>
+                </div>
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5 col-xl-4">
+        <div class="card-custom p-4 h-100">
+            <h6 class="fw-bold mb-4">Produk Terlaris</h6>
+            <div class="d-flex flex-column gap-3" id="topProductsList">
+                {% if data.top_products %}
+                    {% for p in data.top_products %}
+                    <div class="d-flex align-items-center gap-3">
+                        {% set rc = 'rank-1' if loop.index==1 else ('rank-2' if loop.index==2 else ('rank-3' if loop.index==3 else 'rank-n')) %}
+                        <div class="rank-badge {{ rc }}">{{ loop.index }}</div>
+                        <div class="product-avatar"><i class="bi bi-cup-hot"></i></div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-bold small text-truncate">{{ p.name }}</div>
+                            <div class="small text-muted">{{ p.qty }} terjual</div>
+                        </div>
+                        <div class="fw-bold text-success small">Rp{{ "{:,.0f}".format(p.subtotal).replace(',', '.') }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-box-seam d-block mb-2 fs-2"></i>
+                        <p class="mb-0 small">Belum ada data penjualan.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-muted small mt-4 text-center">
+    <i class="bi bi-info-circle me-1"></i> Data laporan mengikuti zona waktu Asia/Jakarta (WIB) dan diperbarui saat ini.
+</div>
+
+<script>
+    function toggleCustomDate(event) {
+        var wrap = document.getElementById('customDateWrap');
+        wrap.classList.remove('d-none');
+        document.querySelectorAll('#filterForm .btn-seg').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-secondary');
+        });
+        const targetBtn = event.target.closest('.btn-seg');
+        if(targetBtn) {
+            targetBtn.classList.remove('btn-outline-secondary');
+            targetBtn.classList.add('btn-primary');
+        }
+        document.getElementById('hiddenPeriode').value = 'custom';
+    }
+    
+    function setCustomPeriode() {
+        document.getElementById('hiddenPeriode').value = 'custom';
+    }
+
+    let salesChart;
+    let currentChartMode = 'pemasukan';
+    
+    let currentLabels = {{ data.chart_labels | tojson }};
+    let dataPemasukan = {{ data.chart_pemasukan | tojson }};
+    let dataLabaBersih = {{ data.chart_laba_bersih | tojson }};
+
+    function switchChartTab(mode) {
+        currentChartMode = mode;
+        const tabs = document.querySelectorAll('.chart-tab');
+        tabs.forEach(t => t.classList.remove('active'));
+        if (mode === 'pemasukan') {
+            document.getElementById('btnTabPemasukan').classList.add('active');
+        } else {
+            document.getElementById('btnTabLaba').classList.add('active');
+        }
+        updateChartDisplay();
+    }
+
+    function updateChartDisplay() {
+        const activeData = currentChartMode === 'pemasukan' ? dataPemasukan : dataLabaBersih;
+        
+        const isEmpty = activeData.length === 0 || activeData.every(v => v === 0);
+        const canvas = document.getElementById('salesChart');
+        const emptyState = document.getElementById('chartEmptyState');
+        
+        if (isEmpty) {
+            canvas.style.display = 'none';
+            emptyState.classList.remove('d-none');
+        } else {
+            canvas.style.display = 'block';
+            emptyState.classList.add('d-none');
+            
+            salesChart.data.labels = currentLabels;
+            salesChart.data.datasets[0].data = activeData;
+            
+            if (currentChartMode === 'pemasukan') {
+                salesChart.data.datasets[0].label = 'Total Pemasukan (Rp)';
+                salesChart.data.datasets[0].borderColor = '#2F74B5';
+                salesChart.data.datasets[0].backgroundColor = 'rgba(47, 116, 181, 0.1)';
+            } else {
+                salesChart.data.datasets[0].label = 'Laba Bersih (Rp)';
+                salesChart.data.datasets[0].borderColor = '#198754';
+                salesChart.data.datasets[0].backgroundColor = 'rgba(25, 135, 84, 0.1)';
+            }
+            salesChart.update();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: currentLabels,
+                datasets: [{
+                    label: 'Total Pemasukan (Rp)',
+                    data: dataPemasukan,
+                    borderColor: '#2F74B5',
+                    backgroundColor: 'rgba(47, 116, 181, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+        
+        updateChartDisplay();
+
+        const form = document.getElementById('filterForm');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitter = e.submitter;
+            if (submitter && submitter.name === 'periode') {
+                document.getElementById('hiddenPeriode').value = submitter.value;
+                document.querySelectorAll('#filterForm .btn-seg').forEach(btn => {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-secondary');
+                });
+                submitter.classList.remove('btn-outline-secondary');
+                submitter.classList.add('btn-primary');
+                if(submitter.value !== 'custom') {
+                    document.getElementById('customDateWrap').classList.add('d-none');
+                }
+            }
+            
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            
+            const pdfBtn = document.getElementById('btnExportPdf');
+            const xlsBtn = document.getElementById('btnExportExcel');
+            if (pdfBtn) pdfBtn.href = "{{ url_for('laporan.export_pdf') }}?" + params.toString();
+            if (xlsBtn) xlsBtn.href = "{{ url_for('laporan.export_excel') }}?" + params.toString();
+
+            fetch("{{ url_for('laporan.index') }}?" + params.toString(), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    document.getElementById('activePeriodBadge').innerHTML = `${res.start_date} - ${res.end_date}`;
+                    const labels = { 'hari_ini': 'Hari Ini', 'minggu_ini': 'Minggu Ini', 'bulan_ini': 'Bulan Ini', 'tahun_ini': 'Tahun Ini', 'custom': 'Custom' };
+                    document.getElementById('activePeriodTag').textContent = labels[document.getElementById('hiddenPeriode').value] || 'Custom';
+
+                    const fmt = (num) => 'Rp' + num.toLocaleString('id-ID').replace(/,/g, '.');
+                    document.getElementById('valPemasukan').textContent = fmt(res.data.total_pemasukan);
+                    document.getElementById('valPengeluaran').textContent = fmt(res.data.total_pengeluaran);
+                    
+                    const laba = res.data.laba_bersih;
+                    const elLaba = document.getElementById('valLaba');
+                    elLaba.textContent = (laba < 0 ? '-' : '') + fmt(Math.abs(laba));
+                    
+                    elLaba.classList.remove('text-danger', 'text-primary');
+                    elLaba.classList.add(laba < 0 ? 'text-danger' : 'text-primary');
+
+                    currentLabels = res.data.chart_labels;
+                    dataPemasukan = res.data.chart_pemasukan;
+                    dataLabaBersih = res.data.chart_laba_bersih;
+                    updateChartDisplay();
+
+                    const listContainer = document.getElementById('topProductsList');
+                    if (res.data.top_products.length > 0) {
+                        let html = '';
+                        res.data.top_products.forEach((p, idx) => {
+                            const i = idx + 1;
+                            const rc = i===1?'rank-1':i===2?'rank-2':i===3?'rank-3':'rank-n';
+                            html += `<div class="d-flex align-items-center gap-3"><div class="rank-badge ${rc}">${i}</div><div class="product-avatar"><i class="bi bi-cup-hot"></i></div><div class="flex-grow-1 overflow-hidden"><div class="fw-bold small text-truncate">${p.name}</div><div class="small text-muted">${p.qty} terjual</div></div><div class="fw-bold text-success small">${fmt(p.subtotal)}</div></div>`;
+                        });
+                        listContainer.innerHTML = html;
+                    } else {
+                        listContainer.innerHTML = `
+                            <div class="text-center text-muted py-5">
+                                <i class="bi bi-box-seam d-block mb-2 fs-2"></i>
+                                <p class="mb-0 small">Belum ada data penjualan.</p>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(err => console.error("Error fetching report data:", err));
+        });
+    });
+</script>
+{% endblock %}

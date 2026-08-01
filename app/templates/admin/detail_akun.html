@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Akun - Siwaruk{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h3 class="fw-bold mb-1"><i class="bi bi-person-lines-fill text-primary me-2"></i>Detail Akun</h3>
+        <p class="text-muted small mb-0">Informasi lengkap pengguna dan daftar usaha yang dimiliki.</p>
+    </div>
+    <div class="col-md-6 text-md-end mt-3 mt-md-0">
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-outline-secondary rounded-3 px-3 py-2">
+            <i class="bi bi-arrow-left me-1"></i> Kembali
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Informasi Akun -->
+    <div class="col-lg-4">
+        <div class="card card-custom border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom pt-4 pb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Informasi Akun</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Nama Lengkap</small>
+                    <div class="fw-bold text-dark fs-5">{{ user.full_name }}</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Username</small>
+                    <div class="text-dark"><i class="bi bi-person me-2 text-muted"></i>{{ user.username }}</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Nomor WhatsApp</small>
+                    <div class="text-dark"><i class="bi bi-whatsapp me-2 text-muted"></i>{{ user.phone or '-' }}</div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Role</small>
+                    {% if user.role == 'admin' %}
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">Admin</span>
+                    {% else %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Pemilik Usaha</span>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block mb-1">Status Password</small>
+                    {% if user.must_change_password %}
+                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1"><i class="bi bi-exclamation-circle me-1"></i> Wajib Ganti</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-3 py-1"><i class="bi bi-check-circle me-1"></i> Aktif</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <small class="text-muted d-block mb-1">Tanggal Bergabung</small>
+                    <div class="text-dark small"><i class="bi bi-calendar3 me-2 text-muted"></i>{{ (user.created_at|to_wib).strftime('%d %B %Y, %H:%M WIB') if user.created_at else '-' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daftar Usaha -->
+    <div class="col-lg-8">
+        <div class="card card-custom border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom pt-4 pb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-shop me-2 text-primary"></i>Usaha yang Dimiliki</h5>
+            </div>
+            <div class="card-body p-4">
+                {% if user.role == 'admin' %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-shield-lock display-1 text-light mb-3 d-block"></i>
+                        <h5 class="fw-semibold text-secondary">Akun Administrator</h5>
+                        <p class="mb-0">Akun Admin tidak memiliki entitas usaha untuk dikelola secara personal.</p>
+                    </div>
+                {% else %}
+                    {% set businesses = user.businesses.all() %}
+                    {% if businesses|length == 0 %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-shop-window display-1 text-light mb-3 d-block"></i>
+                            <h5 class="fw-semibold text-secondary">Belum Memiliki Usaha</h5>
+                            <p class="mb-0">Pengguna ini belum menambahkan atau memiliki entitas usaha di sistem.</p>
+                        </div>
+                    {% else %}
+                        <div class="row g-3">
+                            {% for biz in businesses %}
+                            <div class="col-md-6 col-lg-6">
+                                <div class="card card-custom h-100 p-4 border border-light-subtle shadow-none bg-light bg-opacity-25 rounded-4">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h6 class="fw-bold text-dark fs-5 mb-0 text-truncate" title="{{ biz.business_name }}">{{ biz.business_name }}</h6>
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">Aktif</span>
+                                    </div>
+                                    <div class="d-flex align-items-center text-muted mb-2">
+                                        <i class="bi bi-tags me-2"></i>
+                                        <span class="text-truncate">{{ biz.bidang_usaha or 'Tidak ada bidang usaha' }}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center text-muted small mb-3">
+                                        <i class="bi bi-calendar-check me-2"></i>
+                                        <span>Dibuat: {{ (biz.created_at|to_wib).strftime('%d %b %Y') if biz.created_at else '-' }}</span>
+                                    </div>
+                                    <a href="{{ url_for('admin.business_detail', business_id=biz.id) }}" class="btn btn-outline-primary btn-sm rounded-3 mt-auto">
+                                        <i class="bi bi-shop me-1"></i> Lihat Detail Usaha
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
