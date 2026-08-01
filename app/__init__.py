@@ -86,4 +86,11 @@ def create_app():
             return redirect(url_for("dashboard.index"))
         return redirect(url_for("auth.login"))
 
+    from flask import render_template
+
+    @app.route("/tentang")
+    def tentang():
+        """Halaman Tentang Siwaruk — informasi aplikasi, pengembang, dan tujuan."""
+        return render_template("tentang.html")
+
     return app

@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+
+{% block title %}Tentang Siwaruk - Sistem Integrasi Warung Beruk{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ══════════════════════════════════════
+       TENTANG SIWARUK — Page Styles
+    ══════════════════════════════════════ */
+    .tentang-page {
+        max-width: 860px;
+        margin: 0 auto;
+        padding-bottom: 3rem;
+    }
+
+    /* ── Hero ── */
+    .hero-section {
+        background: linear-gradient(135deg, #1B4965 0%, #2F74B5 60%, #4A9FD4 100%);
+        border-radius: 1.25rem;
+        padding: 2.75rem 2rem;
+        text-align: center;
+        color: #ffffff;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: -40px; right: -40px;
+        width: 180px; height: 180px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.06);
+    }
+
+    .hero-section::after {
+        content: '';
+        position: absolute;
+        bottom: -50px; left: -30px;
+        width: 220px; height: 220px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.05);
+    }
+
+    .hero-logo {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 1rem;
+        display: block;
+        filter: brightness(0) invert(1);
+        opacity: 0.95;
+    }
+
+    .hero-logo-fallback {
+        width: 72px; height: 72px;
+        margin: 0 auto 1rem;
+        background: rgba(255,255,255,0.15);
+        border-radius: 1rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.2rem;
+    }
+
+    .hero-title {
+        font-size: clamp(2rem, 6vw, 2.8rem);
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.25rem;
+        line-height: 1.1;
+    }
+
+    .hero-subtitle {
+        font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+        font-weight: 500;
+        opacity: 0.85;
+        margin-bottom: 1rem;
+    }
+
+    .hero-tagline {
+        font-size: clamp(0.85rem, 2.2vw, 1rem);
+        opacity: 0.75;
+        font-style: italic;
+    }
+
+    /* ── Section Cards ── */
+    .tentang-card {
+        background: #ffffff;
+        border: 1px solid #E2E8F0;
+        border-radius: 1rem;
+        padding: 1.75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    }
+
+    .section-icon-wrap {
+        width: 44px; height: 44px;
+        border-radius: 0.75rem;
+        background: linear-gradient(135deg, #EBF6FF, #DBEAFE);
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        margin-right: 0.75rem;
+    }
+
+    .section-heading {
+        font-size: clamp(1rem, 3vw, 1.2rem);
+        font-weight: 800;
+        color: #0F172A;
+        margin-bottom: 0;
+    }
+
+    .section-body {
+        font-size: var(--fs-body, 0.95rem);
+        color: #334155;
+        line-height: 1.7;
+    }
+
+    /* ── Feature Grid ── */
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .feature-card {
+        background: #F8FAFC;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 0.875rem;
+        padding: 1.1rem 1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    }
+
+    .feature-card:hover {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 14px rgba(47,116,181,0.13);
+        transform: translateY(-2px);
+    }
+
+    .feature-icon {
+        width: 38px; height: 38px;
+        border-radius: 0.6rem;
+        background: var(--nav-bg);
+        display: flex; align-items: center; justify-content: center;
+        color: #ffffff;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .feature-label {
+        font-size: var(--fs-sm, 0.875rem);
+        font-weight: 700;
+        color: #0F172A;
+        line-height: 1.3;
+        margin-bottom: 0.2rem;
+    }
+
+    .feature-desc {
+        font-size: var(--fs-xs, 0.78rem);
+        color: #64748B;
+        line-height: 1.4;
+    }
+
+    /* ── Tujuan list ── */
+    .tujuan-list {
+        list-style: none;
+        padding: 0;
+        margin: 0.75rem 0 0;
+    }
+
+    .tujuan-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px dashed #E2E8F0;
+        font-size: var(--fs-body, 0.95rem);
+        color: #334155;
+        line-height: 1.5;
+    }
+
+    .tujuan-list li:last-child { border-bottom: none; }
+
+    .tujuan-bullet {
+        width: 24px; height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2F74B5, #1B4965);
+        color: #fff;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.72rem;
+        font-weight: 800;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    /* ── Tim card ── */
+    .tim-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .tim-member {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        background: #F0F8FF;
+        border: 1px solid #BFDBFE;
+        border-radius: 2rem;
+        padding: 0.45rem 1rem 0.45rem 0.55rem;
+    }
+
+    .tim-avatar {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: var(--nav-bg);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .tim-name {
+        font-size: var(--fs-sm, 0.875rem);
+        font-weight: 700;
+        color: #1E3A5F;
+    }
+
+    /* ── Info rows inside dev card ── */
+    .dev-info-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.6rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: var(--fs-body, 0.95rem);
+    }
+
+    .dev-info-row:last-of-type { border-bottom: none; }
+
+    .dev-info-label {
+        font-weight: 700;
+        color: #64748B;
+        min-width: 90px;
+        flex-shrink: 0;
+        font-size: var(--fs-sm, 0.875rem);
+    }
+
+    .dev-info-value {
+        color: #0F172A;
+        font-weight: 600;
+    }
+
+    /* ── Thankyou banner ── */
+    .thankyou-banner {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1.5px solid #86efac;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .thankyou-banner .bi {
+        font-size: 2rem;
+        color: #16a34a;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ── Back Button ── */
+    .btn-back-home {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-size: var(--fs-sm, 0.875rem);
+        padding: 0.3rem 0;
+        margin-bottom: 1.5rem;
+        transition: gap 0.15s;
+    }
+
+    .btn-back-home:hover {
+        gap: 0.65rem;
+        color: var(--primary-dark);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 575.98px) {
+        .hero-section {
+            padding: 2rem 1.25rem;
+            border-radius: 0.875rem;
+        }
+        .tentang-card {
+            padding: 1.25rem;
+        }
+        .feature-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 399.98px) {
+        .feature-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tentang-page">
+
+    {# Back link #}
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('dashboard.index') }}" class="btn-back-home">
+        <i class="bi bi-arrow-left"></i> Kembali ke Beranda
+    </a>
+    {% endif %}
+
+    {# ══════════════════════════════
+       HERO
+    ══════════════════════════════ #}
+    <div class="hero-section">
+        <img src="{{ url_for('static', filename='img/logo-siwaruk.png') }}"
+             alt="Logo Siwaruk"
+             class="hero-logo"
+             onerror="this.style.display='none'; document.getElementById('hero-logo-fb').style.display='flex';">
+        <div id="hero-logo-fb" class="hero-logo-fallback" style="display:none;">🏪</div>
+
+        <div class="hero-title">SIWARUK</div>
+        <div class="hero-subtitle">Sistem Integrasi Warung Beruk</div>
+        <div class="hero-tagline">"Mengelola usaha menjadi lebih mudah, rapi, dan terintegrasi."</div>
+    </div>
+
+    {# ══════════════════════════════
+       TENTANG
+    ══════════════════════════════ #}
+    <div class="tentang-card">
+        <div class="d-flex align-items-center mb-3">
+            <span class="section-icon-wrap"><i class="bi bi-info-circle-fill"></i></span>
+            <h2 class="section-heading">Tentang Siwaruk</h2>
+        </div>
+        <p class="section-body mb-0">
+            Siwaruk <em>(Sistem Integrasi Warung Beruk)</em> merupakan aplikasi berbasis web yang dikembangkan
+            untuk membantu pelaku Usaha Mikro, Kecil, dan Menengah (UMKM) dalam mengelola usahanya secara
+            lebih mudah, rapi, dan efisien. Aplikasi ini menyediakan berbagai fitur yang mendukung pengelolaan
+            usaha, mulai dari pencatatan transaksi, pengelolaan produk, hingga penyusunan laporan keuangan
+            dalam satu sistem yang terintegrasi.
+        </p>
+    </div>
+
+    {# ══════════════════════════════
+       LATAR BELAKANG
+    ══════════════════════════════ #}
+    <div class="tentang-card">
+        <div class="d-flex align-items-center mb-3">
+            <span class="section-icon-wrap"><i class="bi bi-geo-alt-fill"></i></span>
+            <h2 class="section-heading">Latar Belakang</h2>
+        </div>
+        <p class="section-body mb-0">
+            Siwaruk dikembangkan sebagai bagian dari upaya mendukung digitalisasi UMKM di
+            <strong>Desa Beruk, Kecamatan Jatiyoso, Kabupaten Karanganyar, Provinsi Jawa Tengah</strong>.
+            Melalui pemanfaatan teknologi informasi, aplikasi ini diharapkan dapat membantu pelaku UMKM
+            dalam melakukan pencatatan keuangan yang lebih tertib, meningkatkan efisiensi pengelolaan usaha,
+            serta mendukung pengambilan keputusan berdasarkan kondisi keuangan usaha.
+        </p>
+    </div>
+
+    {# ══════════════════════════════
+       TUJUAN
+    ══════════════════════════════ #}
+    <div class="tentang-card">
+        <div class="d-flex align-items-center mb-3">
+            <span class="section-icon-wrap"><i class="bi bi-bullseye"></i></span>
+            <h2 class="section-heading">Tujuan Siwaruk</h2>
+        </div>
+        <ul class="tujuan-list">
+            <li>
+                <span class="tujuan-bullet">1</span>
+                Membantu pelaku UMKM melakukan pencatatan transaksi secara lebih mudah.
+            </li>
+            <li>
+                <span class="tujuan-bullet">2</span>
+                Mempermudah pengelolaan data usaha dan produk.
+            </li>
+            <li>
+                <span class="tujuan-bullet">3</span>
+                Menyediakan laporan keuangan yang informatif dan mudah dipahami.
+            </li>
+            <li>
+                <span class="tujuan-bullet">4</span>
+                Mendukung proses digitalisasi UMKM di Desa Beruk.
+            </li>
+        </ul>
+    </div>
+
+    {# ══════════════════════════════
+       FITUR UTAMA
+    ══════════════════════════════ #}
+    <div class="tentang-card">
+        <div class="d-flex align-items-center mb-2">
+            <span class="section-icon-wrap"><i class="bi bi-grid-fill"></i></span>
+            <h2 class="section-heading">Fitur Utama</h2>
+        </div>
+        <p class="section-body mb-0">Siwaruk menyediakan fitur-fitur berikut untuk mendukung pengelolaan usaha Anda:</p>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-house-fill"></i></div>
+                <div>
+                    <div class="feature-label">Beranda</div>
+                    <div class="feature-desc">Ringkasan keuangan dan aktivitas usaha terkini.</div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-shop-window"></i></div>
+                <div>
+                    <div class="feature-label">Kelola Usaha</div>
+                    <div class="feature-desc">Atur data usaha, produk, dan transaksi dalam satu menu.</div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-bag-fill"></i></div>
+                <div>
+                    <div class="feature-label">Kelola Produk</div>
+                    <div class="feature-desc">Tambah, ubah, dan hapus produk beserta stok dan harga.</div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-credit-card-fill"></i></div>
+                <div>
+                    <div class="feature-label">Kelola Transaksi</div>
+                    <div class="feature-desc">Catat pemasukan dan pengeluaran usaha secara lengkap.</div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-bar-chart-fill"></i></div>
+                <div>
+                    <div class="feature-label">Laporan Keuangan</div>
+                    <div class="feature-desc">Grafik dan ringkasan keuangan berdasarkan periode pilihan.</div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+                <div>
+                    <div class="feature-label">Unduh Laporan PDF</div>
+                    <div class="feature-desc">Ekspor laporan keuangan dalam format PDF siap cetak.</div>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="bi bi-file-earmark-excel-fill"></i></div>
+                <div>
+                    <div class="feature-label">Unduh Laporan Excel</div>
+                    <div class="feature-desc">Ekspor data laporan dalam format Excel untuk analisis lanjutan.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════
+       PENGEMBANG
+    ══════════════════════════════ #}
+    <div class="tentang-card">
+        <div class="d-flex align-items-center mb-3">
+            <span class="section-icon-wrap"><i class="bi bi-people-fill"></i></span>
+            <h2 class="section-heading">Pengembang</h2>
+        </div>
+
+        <div class="dev-info-row">
+            <span class="dev-info-label"><i class="bi bi-mortarboard-fill me-1 text-primary"></i>Program</span>
+            <span class="dev-info-value">KKN-PPM Universitas Gadjah Mada 2026</span>
+        </div>
+        <div class="dev-info-row">
+            <span class="dev-info-label"><i class="bi bi-pin-map-fill me-1 text-danger"></i>Unit</span>
+            <span class="dev-info-value">Argayosa Jatiyoso</span>
+        </div>
+
+        <div class="mt-3 mb-2">
+            <span class="fw-bold text-secondary" style="font-size: var(--fs-sm, 0.875rem);">
+                <i class="bi bi-person-badge me-1"></i>Tim Pengembang Aplikasi
+            </span>
+        </div>
+        <div class="tim-grid">
+            <div class="tim-member">
+                <div class="tim-avatar">AN</div>
+                <span class="tim-name">Adinda Nur Isnaini</span>
+            </div>
+            <div class="tim-member">
+                <div class="tim-avatar">EF</div>
+                <span class="tim-name">Eugene Flamboyan</span>
+            </div>
+            <div class="tim-member">
+                <div class="tim-avatar">UG</div>
+                <span class="tim-name">Ukhti Ghaisani Hanifah</span>
+            </div>
+        </div>
+
+        <div class="alert alert-info py-2 px-3 small mt-3 mb-0 d-flex align-items-start gap-2 rounded-3">
+            <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+            <div>
+                Aplikasi ini dikembangkan sebagai salah satu luaran program
+                <strong>KKN-PPM Universitas Gadjah Mada Tahun 2026</strong>
+                untuk mendukung digitalisasi UMKM di Desa Beruk.
+            </div>
+        </div>
+    </div>
+
+
+    {# ══════════════════════════════
+       FOOTER INFO
+    ══════════════════════════════ #}
+    <div class="text-center text-muted" style="font-size: var(--fs-xs, 0.8rem);">
+        <i class="bi bi-code-slash me-1"></i>
+        Siwaruk &copy; 2026 &mdash; KKN-PPM UGM &middot; Argayosa Jatiyoso &middot; Desa Beruk
+    </div>
+
+</div>
+{% endblock %}

@@ -67,12 +67,12 @@
         <a id="btnExportPdf"
            href="{{ url_for('laporan.export_pdf', periode=periode, start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}"
            class="btn btn-outline-danger btn-sm rounded-pill fw-semibold px-3" target="_blank">
-            <i class="bi bi-file-earmark-pdf-fill"></i> Export PDF
+            <i class="bi bi-file-earmark-pdf-fill"></i> Unduh PDF
         </a>
         <a id="btnExportExcel"
            href="{{ url_for('laporan.export_excel', periode=periode, start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}"
            class="btn btn-outline-success btn-sm rounded-pill fw-semibold px-3">
-            <i class="bi bi-file-earmark-excel-fill"></i> Export Excel
+            <i class="bi bi-file-earmark-excel-fill"></i> Unduh Excel
         </a>
     </div>
 </div>
@@ -174,8 +174,30 @@
 <div class="row g-3">
     <div class="col-12 col-lg-7 col-xl-8">
         <div class="card-custom p-4 h-100 d-flex flex-column">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-                <h6 class="fw-bold mb-0">Grafik Keuangan</h6>
+            <div class="mb-3">
+                <h6 class="fw-bold mb-2">Grafik Keuangan</h6>
+                <!-- ── Chart Legend ── -->
+                <div class="d-flex flex-wrap gap-3 mb-3" id="chartLegend" aria-label="Keterangan warna grafik">
+                    <span class="d-inline-flex align-items-center gap-1" style="font-size: var(--fs-xs, 0.8rem); color: #475569;">
+                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                            <circle cx="6" cy="6" r="5" fill="#0d6efd"/>
+                        </svg>
+                        Pemasukan
+                    </span>
+                    <span class="d-inline-flex align-items-center gap-1" style="font-size: var(--fs-xs, 0.8rem); color: #475569;">
+                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                            <circle cx="6" cy="6" r="5" fill="#dc3545"/>
+                        </svg>
+                        Pengeluaran
+                    </span>
+                    <span class="d-inline-flex align-items-center gap-1" style="font-size: var(--fs-xs, 0.8rem); color: #475569;">
+                        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                            <circle cx="6" cy="6" r="5" fill="#198754"/>
+                        </svg>
+                        Laba Bersih
+                    </span>
+                </div>
+                <!-- ── Dataset Toggle Buttons ── -->
                 <div class="d-flex gap-2 flex-wrap" id="chartToggles">
                     <button type="button" class="btn btn-sm btn-primary rounded-pill dataset-toggle fw-semibold px-3" data-dataset="0">
                         Pemasukan

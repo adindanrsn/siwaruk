@@ -423,6 +423,7 @@
         }
     }
     
+    /* ── Mobile bottom bar (cart summary pill) ── */
     .mobile-bottom-bar {
         position: fixed;
         bottom: 0;
@@ -432,6 +433,7 @@
         border-top: 1px solid #E2E8F0;
         box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
         padding: 0.85rem 1.2rem;
+        padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
         z-index: 1040;
         display: flex;
         justify-content: space-between;
@@ -467,6 +469,49 @@
         padding: 0.5rem 1.2rem;
         border: none;
         box-shadow: 0 4px 10px rgba(47,116,181,0.25);
+    }
+
+    /* ── Sticky save button inside offcanvas on mobile ── */
+    @media (max-width: 991.98px) {
+        /* Make offcanvas body a flex column so footer sticks to bottom */
+        #cartOffcanvas .offcanvas-body {
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+        }
+        #cartOffcanvas .cart-panel {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            overflow: hidden !important;
+            height: 100% !important;
+        }
+        /* Items area: scrollable, takes remaining space */
+        #cartOffcanvas .cart-items-scroll {
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+            max-height: none !important;
+        }
+        /* Footer: never scrolls away, sticks at bottom of offcanvas */
+        #cartOffcanvas .cart-footer {
+            flex-shrink: 0 !important;
+            position: sticky !important;
+            bottom: 0 !important;
+            z-index: 10;
+            border-top: 1.5px solid #E2E8F0 !important;
+            background: #ffffff !important;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.07);
+            padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+            border-radius: 0 !important;
+        }
+        /* Make Simpan button bigger — easier to tap with thumb */
+        #cartOffcanvas .btn-simpan {
+            min-height: 52px;
+            font-size: 1rem;
+            border-radius: 0.75rem !important;
+        }
     }
 </style>
 {% endblock %}
@@ -615,7 +660,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#cartOffcanvas" aria-label="Close"></button>
                     </div>
                 </div>
-                <div class="offcanvas-body p-0 p-lg-0 overflow-visible h-100 flex-column">
+                <div class="offcanvas-body p-0 p-lg-0 h-100" style="display:flex; flex-direction:column; overflow:hidden;">
                     <div class="cart-panel w-100 h-100">
 
                         {# Cart Header (Desktop only due to CSS) #}
