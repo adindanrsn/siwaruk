@@ -63,7 +63,7 @@
             <span class="text-muted small" id="headerPeriodeDate">{{ formatted_periode }}</span>
         </div>
     </div>
-    <div class="d-flex gap-2 flex-shrink-0">
+    <div class="d-flex gap-2 flex-shrink-0 flex-wrap">
         <a id="btnExportPdf"
            href="{{ url_for('laporan.export_pdf', periode=periode, start_date=request.args.get('start_date'), end_date=request.args.get('end_date')) }}"
            class="btn btn-outline-danger btn-sm rounded-pill fw-semibold px-3" target="_blank">
@@ -74,6 +74,14 @@
            class="btn btn-outline-success btn-sm rounded-pill fw-semibold px-3">
             <i class="bi bi-file-earmark-excel-fill"></i> Unduh Excel
         </a>
+        <button type="button"
+                id="btnKirimAdmin"
+                class="btn btn-outline-primary btn-sm rounded-pill fw-semibold px-3"
+                data-bs-toggle="modal"
+                data-bs-target="#modalKirimAdmin"
+                title="Kirim laporan ke Admin">
+            <i class="bi bi-send-fill"></i> Kirim ke Admin
+        </button>
     </div>
 </div>
 
@@ -258,6 +266,72 @@
 
 
 {% endblock %}
+
+{# ══════════════════════════════════════
+   MODAL — Konfirmasi Kirim ke Admin
+══════════════════════════════════════ #}
+<div class="modal fade" id="modalKirimAdmin" tabindex="-1"
+     aria-labelledby="modalKirimAdminLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalKirimAdminLabel">
+                    <i class="bi bi-send-fill text-primary me-2"></i>Kirim Laporan ke Admin
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body py-3">
+                <div class="alert alert-info py-2 px-3 small d-flex align-items-start gap-2 rounded-3 mb-3">
+                    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                    <div>
+                        Laporan untuk periode <strong id="kirimPeriodeLabel">{{ formatted_periode }}</strong>
+                        akan dikirimkan ke Admin dalam format PDF.
+                    </div>
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-check-circle me-1 text-success"></i>
+                    Admin akan menerima notifikasi dan dapat meninjau laporan Anda.
+                </p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary rounded-3 fw-bold" id="btnKonfirmasiKirim">
+                    <span id="kirimSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
+                    <i class="bi bi-send-fill me-1" id="kirimIcon"></i>
+                    Kirim Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ══════════════════════════════════════
+   TOAST — Notifikasi Sukses
+══════════════════════════════════════ #}
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    <div id="toastKirimBerhasil" class="toast align-items-center border-0 text-white bg-success"
+         role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="toastKirimMsg">Laporan berhasil dikirim ke Admin.</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast" aria-label="Tutup"></button>
+        </div>
+    </div>
+    <div id="toastKirimGagal" class="toast align-items-center border-0 text-white bg-danger"
+         role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold">
+                <i class="bi bi-x-circle-fill me-2"></i>
+                <span id="toastGagalMsg">Gagal mengirim laporan. Coba lagi.</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast" aria-label="Tutup"></button>
+        </div>
+    </div>
+</div>
 
 {% block extra_js %}
 
@@ -500,4 +574,92 @@
         });
     });
 </script>
+
+<script>
+    /* ── Kirim ke Admin — AJAX Handler ── */
+    (function () {
+        const btnKonfirmasi = document.getElementById('btnKonfirmasiKirim');
+        const spinner       = document.getElementById('kirimSpinner');
+        const kirimIcon     = document.getElementById('kirimIcon');
+        const kirimLabel    = document.getElementById('kirimPeriodeLabel');
+        const toastOk       = document.getElementById('toastKirimBerhasil');
+        const toastErr      = document.getElementById('toastKirimGagal');
+        const toastMsg      = document.getElementById('toastKirimMsg');
+        const toastErrMsg   = document.getElementById('toastGagalMsg');
+
+        /* Update label periode di dalam modal setiap kali periode aktif berubah */
+        function updateKirimLabel() {
+            const badge = document.getElementById('activePeriodBadge');
+            if (badge && kirimLabel) {
+                kirimLabel.textContent = badge.textContent.trim();
+            }
+        }
+
+        /* Sync saat halaman pertama dimuat */
+        document.addEventListener('DOMContentLoaded', updateKirimLabel);
+
+        /* Sync setelah AJAX filter chart selesai — dipanggil dari handler filterForm */
+        document.addEventListener('laporan:periodeUpdated', updateKirimLabel);
+
+        if (!btnKonfirmasi) return;
+
+        btnKonfirmasi.addEventListener('click', function () {
+            /* Ambil periode & tanggal dari filterForm */
+            const form       = document.getElementById('filterForm');
+            const periode    = document.getElementById('hiddenPeriode')
+                               ? document.getElementById('hiddenPeriode').value
+                               : 'bulan_ini';
+            const startDate  = form ? form.querySelector('[name="start_date"]')?.value || '' : '';
+            const endDate    = form ? form.querySelector('[name="end_date"]')?.value   || '' : '';
+
+            /* Loading state */
+            btnKonfirmasi.disabled = true;
+            spinner.classList.remove('d-none');
+            kirimIcon.classList.add('d-none');
+
+            const body = new FormData();
+            body.append('periode',    periode);
+            body.append('start_date', startDate);
+            body.append('end_date',   endDate);
+
+            /* CSRF token dari meta tag (Flask-WTF) jika ada */
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            const headers  = {};
+            if (csrfMeta) headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
+
+            fetch("{{ url_for('laporan.kirim_ke_admin') }}", {
+                method: 'POST',
+                headers: headers,
+                body: body,
+            })
+            .then(res => res.json())
+            .then(data => {
+                /* Tutup modal */
+                const modal = bootstrap.Modal.getInstance(
+                    document.getElementById('modalKirimAdmin')
+                );
+                if (modal) modal.hide();
+
+                if (data.status === 'success') {
+                    toastMsg.textContent = data.message || 'Laporan berhasil dikirim ke Admin.';
+                    new bootstrap.Toast(toastOk, { delay: 4000 }).show();
+                } else {
+                    toastErrMsg.textContent = data.message || 'Gagal mengirim laporan. Coba lagi.';
+                    new bootstrap.Toast(toastErr, { delay: 4000 }).show();
+                }
+            })
+            .catch(() => {
+                toastErrMsg.textContent = 'Gagal terhubung ke server. Coba lagi.';
+                new bootstrap.Toast(toastErr, { delay: 4000 }).show();
+            })
+            .finally(() => {
+                /* Reset loading state */
+                btnKonfirmasi.disabled = false;
+                spinner.classList.add('d-none');
+                kirimIcon.classList.remove('d-none');
+            });
+        });
+    })();
+</script>
 {% endblock %}
+

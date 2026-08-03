@@ -10,6 +10,7 @@ from app.models.sale_detail import SaleDetail
 from app.models.sales_transaction import SalesTransaction
 from app.models.sales_transaction_item import SalesTransactionItem
 from app.models.expense_transaction import ExpenseTransaction
+from app.models.laporan_terkirim import LaporanTerkirim
 
 __all__ = [
     'BaseModel',
@@ -24,4 +25,5 @@ __all__ = [
     'SalesTransaction',
     'SalesTransactionItem',
     'ExpenseTransaction',
+    'LaporanTerkirim',
 ]
