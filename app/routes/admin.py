@@ -61,6 +61,7 @@ def create_user():
         new_user = User(
             username=username,
             full_name=full_name,
+            phone=phone,
             role=role,
             must_change_password=True
         )
@@ -69,11 +70,34 @@ def create_user():
         db.session.add(new_user)
         db.session.commit()
 
-        # Save credentials temporarily in session for post-creation modal popup (shown only once)
+        # Format WhatsApp message exactly per requirement
+        wa_message = (
+            f"Halo!\n\n"
+            f"Akun Siwaruk Anda telah berhasil dibuat.\n\n"
+            f"Username:\n{username}\n\n"
+            f"Password:\n{temp_password}\n\n"
+            f"Silakan login melalui:\nhttps://siwaruk.vercel.app\n\n"
+            f"Demi keamanan, segera ubah password setelah berhasil login pertama kali.\n\n"
+            f"Terima kasih."
+        )
+
+        from app.utils import normalize_whatsapp_number, is_valid_whatsapp_number
+        from urllib.parse import quote
+
+        is_valid_wa = is_valid_whatsapp_number(phone)
+        wa_phone = normalize_whatsapp_number(phone) if is_valid_wa else ''
+        wa_url = f"https://wa.me/{wa_phone}?text={quote(wa_message)}" if wa_phone else ''
+
+        # Save credentials & WA format in session for post-creation modal popup
         session['new_account_created'] = {
             'username': username,
             'temp_password': temp_password,
             'full_name': full_name,
+            'phone': phone,
+            'wa_phone': wa_phone,
+            'wa_message': wa_message,
+            'wa_url': wa_url,
+            'is_valid_wa': is_valid_wa,
         }
         flash(f'Akun Owner untuk "{full_name}" berhasil dibuat!', 'success')
 

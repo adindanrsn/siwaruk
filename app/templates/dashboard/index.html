@@ -544,41 +544,63 @@ document.addEventListener('DOMContentLoaded', function() {
 <div class="modal fade" id="newAccountSuccessModal" tabindex="-1" aria-labelledby="newAccountSuccessModalLabel" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header bg-success text-white rounded-top-4">
+            <div class="modal-header bg-success text-white rounded-top-4 border-bottom-0">
                 <h5 class="modal-title fw-bold" id="newAccountSuccessModalLabel">
                     <i class="bi bi-check-circle-fill me-2"></i>Akun Pemilik Usaha Berhasil Dibuat
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4">
-                <p class="text-muted small mb-3">Harap simpan dan berikan kredensial berikut kepada <strong>{{ new_account.full_name }}</strong>:</p>
+                <p class="text-muted small mb-3">Berikut informasi akun baru untuk Pemilik Usaha:</p>
+                
+                {# Hidden raw text for copying #}
+                <textarea id="formattedAccountMessage" class="d-none">{{ new_account.wa_message }}</textarea>
+
                 <div class="bg-light p-3 rounded-3 border mb-3">
-                    <div class="mb-3">
-                        <small class="text-muted d-block fw-semibold mb-1">Username:</small>
-                        <div class="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border">
-                            <span class="fw-bold text-dark font-monospace" id="newAccUsername">{{ new_account.username }}</span>
-                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-2" onclick="copyById('newAccUsername', 'Username')">
-                                <i class="bi bi-clipboard me-1"></i> Copy Username
-                            </button>
-                        </div>
+                    <div class="row g-2 mb-2 align-items-center">
+                        <div class="col-sm-5 text-muted small fw-semibold"><i class="bi bi-person me-1"></i>Nama Pemilik Usaha:</div>
+                        <div class="col-sm-7 fw-bold text-dark">{{ new_account.full_name }}</div>
                     </div>
-                    <div>
-                        <small class="text-muted d-block fw-semibold mb-1">Password Sementara:</small>
-                        <div class="d-flex align-items-center justify-content-between bg-white p-2 px-3 rounded border">
-                            <span class="fw-bold text-primary font-monospace" id="newAccPassword">{{ new_account.temp_password }}</span>
-                            <button type="button" class="btn btn-outline-primary btn-sm rounded-2" onclick="copyById('newAccPassword', 'Password sementara')">
-                                <i class="bi bi-clipboard me-1"></i> Copy Password
-                            </button>
-                        </div>
+                    <div class="row g-2 mb-2 align-items-center">
+                        <div class="col-sm-5 text-muted small fw-semibold"><i class="bi bi-person-badge me-1"></i>Username:</div>
+                        <div class="col-sm-7 font-monospace fw-bold text-primary fs-6">{{ new_account.username }}</div>
                     </div>
+                    <div class="row g-2 mb-2 align-items-center">
+                        <div class="col-sm-5 text-muted small fw-semibold"><i class="bi bi-key me-1"></i>Password Sementara:</div>
+                        <div class="col-sm-7 font-monospace fw-bold text-danger fs-6">{{ new_account.temp_password }}</div>
+                    </div>
+                    {% if new_account.phone %}
+                    <div class="row g-2 align-items-center">
+                        <div class="col-sm-5 text-muted small fw-semibold"><i class="bi bi-whatsapp me-1"></i>Nomor WhatsApp:</div>
+                        <div class="col-sm-7 text-dark small fw-semibold">{{ new_account.phone }}</div>
+                    </div>
+                    {% endif %}
                 </div>
-                <div class="alert alert-info py-2 px-3 small mb-0 d-flex align-items-center gap-2">
-                    <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
-                    <div>Pemilik Usaha perlu login dan <strong>menambahkan data usaha</strong> secara mandiri melalui menu "Tambah Usaha".</div>
+
+                <div class="d-grid gap-2 mb-2">
+                    {# Tombol 1: Salin Informasi Akun #}
+                    <button type="button" class="btn btn-outline-primary btn-lg rounded-3 fw-bold py-2.5 shadow-sm" onclick="copyFullAccountInfo()">
+                        <i class="bi bi-clipboard-check me-2"></i>📋 Salin Informasi Akun
+                    </button>
+
+                    {# Tombol 2: Kirim via WhatsApp #}
+                    {% if new_account.wa_url and new_account.is_valid_wa %}
+                    <a href="{{ new_account.wa_url }}" target="_blank" class="btn btn-success btn-lg rounded-3 fw-bold py-2.5 shadow-sm">
+                        <i class="bi bi-whatsapp me-2"></i>💬 Kirim via WhatsApp
+                    </a>
+                    {% else %}
+                    <button type="button" class="btn btn-secondary btn-lg rounded-3 fw-bold py-2.5" disabled>
+                        <i class="bi bi-whatsapp me-2"></i>💬 Kirim via WhatsApp
+                    </button>
+                    <div class="alert alert-warning py-2 px-3 small rounded-3 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                        <div>Nomor WhatsApp belum tersedia atau tidak valid.</div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Selesai &amp; Tutup</button>
+                <button type="button" class="btn btn-light rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -865,6 +887,30 @@ document.addEventListener('DOMContentLoaded', function() {
         resetModal.show();
         {% endif %}
     });
+
+    function copyFullAccountInfo() {
+        var textEl = document.getElementById('formattedAccountMessage');
+        if (!textEl) return;
+        var text = textEl.value;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert("Informasi akun berhasil disalin ke clipboard!");
+            }).catch(function() {
+                fallbackCopyAccountText(textEl);
+            });
+        } else {
+            fallbackCopyAccountText(textEl);
+        }
+    }
+
+    function fallbackCopyAccountText(textEl) {
+        textEl.classList.remove('d-none');
+        textEl.select();
+        document.execCommand('copy');
+        textEl.classList.add('d-none');
+        alert("Informasi akun berhasil disalin ke clipboard!");
+    }
 
     function copyById(elementId, label) {
         var text = document.getElementById(elementId).innerText.trim();
