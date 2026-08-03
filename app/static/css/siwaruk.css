@@ -673,3 +673,190 @@ small, .small, .text-muted, caption {
         height: 40px;
     }
 }
+
+/* ===================================================================
+   20. PAGE-LEVEL RESPONSIVE — per-page overrides
+   Covers: Dashboard, Kelola Usaha/Produk/Transaksi, Laporan, Profil, Tentang
+   =================================================================== */
+
+/* ── 20a. Page headings: override hardcoded inline font-sizes ──
+   Selectors target common heading patterns across pos/riwayat/preview pages. */
+.pos-header h3.fw-bold,
+.pos-container h3.fw-bold,
+.preview-container h3.fw-bold {
+    font-size: var(--fs-page-title) !important;
+}
+
+/* ── 20b. Dashboard — Quick Action icon circles scale on mobile ── */
+@media (max-width: 575.98px) {
+    /* Quick action icon circles (inline style width/height 52px) */
+    div.col-4 span.rounded-circle {
+        width: clamp(40px, 10vw, 52px) !important;
+        height: clamp(40px, 10vw, 52px) !important;
+        font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+    }
+    /* Laporan download buttons: compact on xs */
+    #btnExportPdf,
+    #btnExportExcel {
+        min-height: 36px;
+        padding: 0.3rem 0.7rem;
+        font-size: var(--fs-xs);
+    }
+}
+
+/* ── 20c. Laporan Keuangan ── */
+/* Period filter buttons — touch-friendly */
+#filterForm .btn-seg {
+    min-height: 40px;
+    padding: 0.35rem 0.65rem;
+    font-size: var(--fs-xs);
+}
+
+@media (max-width: 399.98px) {
+    /* Summary icon circles (inline style 56px) */
+    .card-custom [style*="width: 56px"] {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 1.25rem !important;
+        border-radius: 0.5rem !important;
+    }
+    /* Chart container slightly shorter on very small screens */
+    .chart-container {
+        min-height: 240px !important;
+    }
+}
+
+/* ── 20d. Kelola Produk ── */
+.produk-title {
+    font-size: var(--fs-page-title) !important;
+}
+
+@media (max-width: 767.98px) {
+    /* Produk table: horizontal scroll, no layout break */
+    .produk-card {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .produk-table th {
+        font-size: var(--fs-xs) !important;
+        padding: 0.6rem 0.75rem !important;
+        white-space: nowrap;
+    }
+    .produk-table td {
+        font-size: var(--fs-sm) !important;
+        padding: 0.6rem 0.75rem !important;
+        white-space: nowrap;
+    }
+    /* Action buttons in produk table */
+    .btn-action-edit,
+    .btn-action-delete {
+        min-height: 36px;
+        padding: 0.3rem 0.6rem !important;
+        font-size: var(--fs-xs) !important;
+    }
+}
+
+/* ── 20e. Kelola Transaksi — POS Kasir ── */
+@media (max-width: 767.98px) {
+    /* Product grid: 2 columns on tablet/mobile */
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+    /* Cart total: slightly smaller on mobile */
+    .total-amount {
+        font-size: clamp(1.1rem, 5vw, 1.5rem) !important;
+    }
+}
+
+@media (max-width: 399.98px) {
+    .product-grid {
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+    .prod-name  { font-size: 0.8rem !important; }
+    .prod-price { font-size: 0.82rem !important; }
+}
+
+/* Riwayat Transaksi — horizontal scroll on mobile */
+@media (max-width: 767.98px) {
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    .modal-title,
+    .offcanvas-title {
+        font-size: clamp(0.95rem, 3vw, 1.15rem) !important;
+    }
+}
+
+/* ── 20f. Tentang Siwaruk — mobile tweaks ── */
+@media (max-width: 575.98px) {
+    .hero-title {
+        letter-spacing: 0.03em !important;
+    }
+    .feature-grid {
+        gap: 0.75rem !important;
+    }
+    .tim-grid {
+        gap: 0.5rem !important;
+    }
+    .tim-member {
+        padding: 0.4rem 0.85rem 0.4rem 0.5rem !important;
+    }
+}
+
+/* ── 20g. Global mobile: ensure interactive elements ≥ 44px ── */
+@media (max-width: 767.98px) {
+    /* Inputs: 16px prevents iOS auto-zoom on focus */
+    .form-control,
+    .form-select {
+        min-height: 44px !important;
+        font-size: 16px !important;
+    }
+    /* Navigation items */
+    .main-nav-bar .nav-link-item {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    /* Primary / default buttons: thumb-friendly */
+    .btn:not(.btn-close):not(.btn-xs) {
+        min-height: 44px;
+    }
+    /* Small buttons: slightly relaxed — still tappable */
+    .btn-sm {
+        min-height: 36px !important;
+    }
+}
+
+/* ── 20h. Extra-small (<= 400px) — compact universal spacing ── */
+@media (max-width: 399.98px) {
+    .container,
+    .container-fluid {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+    .card-custom {
+        padding: 0.875rem !important;
+    }
+    .row.g-3 {
+        --bs-gutter-x: 0.75rem;
+        --bs-gutter-y: 0.75rem;
+    }
+    .badge {
+        font-size: 0.7rem !important;
+        padding: 0.3em 0.55em !important;
+    }
+}
+
+/* ── 20i. Prevent horizontal overflow on any mobile screen ── */
+@media (max-width: 767.98px) {
+    body {
+        overflow-x: hidden;
+    }
+    .main-nav-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap !important;
+    }
+}
