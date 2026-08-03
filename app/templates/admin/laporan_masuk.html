@@ -244,14 +244,12 @@
                                 </a>
                                 {% endif %}
 
-                                {# Lihat Detail (trigger modal) #}
-                                <button type="button"
-                                        class="btn btn-outline-info btn-sm rounded-3 px-2 py-1"
-                                        title="Lihat Detail"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalDetail{{ lap.id }}">
+                                {# Lihat Detail (Halaman Detail) #}
+                                <a href="{{ url_for('admin.detail_laporan', laporan_id=lap.id) }}"
+                                   class="btn btn-outline-info btn-sm rounded-3 px-2 py-1"
+                                   title="Lihat Detail">
                                     <i class="bi bi-eye-fill"></i>
-                                </button>
+                                </a>
 
                                 {# Ubah Status #}
                                 <button type="button"

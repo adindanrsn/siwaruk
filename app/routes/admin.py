@@ -238,7 +238,25 @@ def update_status_laporan(laporan_id):
     record.status = new_status
     db.session.commit()
     flash(f'Status laporan berhasil diubah menjadi "{new_status}".', 'success')
+    
+    next_url = request.form.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect(url_for('admin.laporan_masuk'))
+
+
+@admin_bp.route('/laporan-masuk/<int:laporan_id>/detail', methods=['GET'])
+@login_required
+@admin_required
+def detail_laporan(laporan_id):
+    """
+    Halaman detail laporan untuk Admin: menampilkan informasi usaha, pemilik usaha,
+    periode, tanggal kirim, preview PDF di browser, serta tombol aksi.
+    """
+    from app.models.laporan_terkirim import LaporanTerkirim
+
+    laporan = LaporanTerkirim.query.get_or_404(laporan_id)
+    return render_template('admin/detail_laporan.html', laporan=laporan)
 
 
 @admin_bp.route('/laporan-masuk/<int:laporan_id>/pdf', methods=['GET'])
@@ -265,9 +283,11 @@ def buka_pdf_laporan(laporan_id):
         flash('File PDF tidak ditemukan di server.', 'danger')
         return redirect(url_for('admin.laporan_masuk'))
 
+    as_attachment = request.args.get('download', '0') == '1'
     return send_from_directory(
         directory,
         filename,
-        as_attachment=False,
+        as_attachment=as_attachment,
         mimetype='application/pdf',
     )
+
