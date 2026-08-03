@@ -172,3 +172,102 @@ def business_detail(business_id):
         total_expense=total_expense,
         net_profit=net_profit,
     )
+
+
+# ─────────────────────────────────────────────────────────────
+#  LAPORAN MASUK — Daftar laporan yang dikirim pemilik usaha
+# ─────────────────────────────────────────────────────────────
+@admin_bp.route('/laporan-masuk', methods=['GET'])
+@login_required
+@admin_required
+def laporan_masuk():
+    """
+    Tampilkan semua laporan keuangan yang telah dikirim oleh pemilik usaha.
+    Admin dapat melihat detail, membuka PDF, dan mengubah status tinjauan.
+    """
+    from app.models.laporan_terkirim import LaporanTerkirim
+
+    # Filter opsional berdasarkan status
+    status_filter = request.args.get('status', '')
+
+    query = LaporanTerkirim.query.order_by(LaporanTerkirim.submitted_at.desc())
+    if status_filter and status_filter != 'semua':
+        query = query.filter(LaporanTerkirim.status == status_filter)
+
+    laporan_list = query.all()
+
+    # Statistik ringkasan
+    total_all      = LaporanTerkirim.query.count()
+    total_belum    = LaporanTerkirim.query.filter_by(status=LaporanTerkirim.STATUS_BELUM).count()
+    total_ditinjau = LaporanTerkirim.query.filter_by(status=LaporanTerkirim.STATUS_DITINJAU).count()
+    total_revisi   = LaporanTerkirim.query.filter_by(status='Perlu Revisi').count()
+
+    return render_template(
+        'admin/laporan_masuk.html',
+        laporan_list=laporan_list,
+        status_filter=status_filter,
+        total_all=total_all,
+        total_belum=total_belum,
+        total_ditinjau=total_ditinjau,
+        total_revisi=total_revisi,
+    )
+
+
+@admin_bp.route('/laporan-masuk/<int:laporan_id>/update-status', methods=['POST'])
+@login_required
+@admin_required
+def update_status_laporan(laporan_id):
+    """
+    Ubah status tinjauan laporan yang masuk.
+    Menerima POST form dengan field 'status'.
+    """
+    from app.models.laporan_terkirim import LaporanTerkirim
+
+    record = LaporanTerkirim.query.get_or_404(laporan_id)
+    new_status = request.form.get('status', '').strip()
+
+    allowed = [
+        LaporanTerkirim.STATUS_BELUM,
+        LaporanTerkirim.STATUS_DITINJAU,
+        'Perlu Revisi',
+    ]
+    if new_status not in allowed:
+        flash('Status tidak valid.', 'danger')
+        return redirect(url_for('admin.laporan_masuk'))
+
+    record.status = new_status
+    db.session.commit()
+    flash(f'Status laporan berhasil diubah menjadi "{new_status}".', 'success')
+    return redirect(url_for('admin.laporan_masuk'))
+
+
+@admin_bp.route('/laporan-masuk/<int:laporan_id>/pdf', methods=['GET'])
+@login_required
+@admin_required
+def buka_pdf_laporan(laporan_id):
+    """
+    Buka atau unduh file PDF laporan yang tersimpan di instance folder.
+    """
+    import os
+    from flask import send_from_directory, current_app
+    from app.models.laporan_terkirim import LaporanTerkirim
+
+    record = LaporanTerkirim.query.get_or_404(laporan_id)
+    if not record.file_path:
+        flash('File PDF tidak tersedia untuk laporan ini.', 'warning')
+        return redirect(url_for('admin.laporan_masuk'))
+
+    # file_path is relative: "laporan_terkirim/<filename>.pdf"
+    directory = os.path.join(current_app.instance_path, 'laporan_terkirim')
+    filename  = os.path.basename(record.file_path)
+
+    if not os.path.exists(os.path.join(directory, filename)):
+        flash('File PDF tidak ditemukan di server.', 'danger')
+        return redirect(url_for('admin.laporan_masuk'))
+
+    return send_from_directory(
+        directory,
+        filename,
+        as_attachment=False,
+        mimetype='application/pdf',
+    )

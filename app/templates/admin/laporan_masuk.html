@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan Masuk - Siwaruk Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ── Status badge colours ── */
+    .badge-belum    { background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+    .badge-ditinjau { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+    .badge-revisi   { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+
+    /* ── Status dropdown inside table ── */
+    .status-select {
+        font-size: var(--fs-xs, 0.78rem);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.5rem;
+        min-width: 150px;
+    }
+
+    /* ── Summary stat cards ── */
+    .stat-card {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 0.875rem;
+        padding: 1rem 1.25rem;
+        text-align: center;
+        transition: box-shadow 0.15s;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+        color: inherit;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        color: inherit;
+    }
+
+    .stat-card.active-filter {
+        border-color: var(--primary-color, #2F74B5);
+        box-shadow: 0 0 0 2px rgba(47,116,181,0.2);
+    }
+
+    .stat-number {
+        font-size: clamp(1.5rem, 4vw, 2rem);
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .stat-label {
+        font-size: var(--fs-xs, 0.78rem);
+        color: #64748B;
+        margin-top: 0.2rem;
+    }
+
+    /* ── Table ── */
+    .laporan-table th {
+        background: #F8FAFC;
+        font-size: var(--fs-xs, 0.78rem);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #475569;
+        padding: 0.85rem 1rem;
+        border-bottom: 1px solid #E2E8F0;
+        white-space: nowrap;
+    }
+
+    .laporan-table td {
+        padding: 0.85rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: var(--fs-sm, 0.875rem);
+    }
+
+    .laporan-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .laporan-table tr:hover td {
+        background: #F8FAFC;
+    }
+
+    @media (max-width: 767.98px) {
+        .laporan-table th,
+        .laporan-table td {
+            padding: 0.65rem 0.75rem;
+            white-space: nowrap;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Page Header ── #}
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h3 class="fw-bold mb-1">
+            <i class="bi bi-inbox-fill text-primary me-2"></i>Laporan Masuk
+        </h3>
+        <p class="text-muted small mb-0">
+            Daftar laporan keuangan yang telah dikirimkan oleh Pemilik Usaha.
+        </p>
+    </div>
+    <a href="{{ url_for('admin.laporan_masuk') }}" class="btn btn-outline-secondary btn-sm rounded-3">
+        <i class="bi bi-arrow-clockwise me-1"></i> Muat Ulang
+    </a>
+</div>
+
+{# ── Summary Cards (filter shortcut) ── #}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.laporan_masuk', status='semua') }}"
+           class="stat-card {% if not status_filter or status_filter == 'semua' %}active-filter{% endif %}">
+            <div class="stat-number text-dark">{{ total_all }}</div>
+            <div class="stat-label"><i class="bi bi-collection me-1"></i>Semua Laporan</div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.laporan_masuk', status='Belum Ditinjau') }}"
+           class="stat-card {% if status_filter == 'Belum Ditinjau' %}active-filter{% endif %}">
+            <div class="stat-number text-warning">{{ total_belum }}</div>
+            <div class="stat-label"><i class="bi bi-hourglass-split me-1"></i>Belum Ditinjau</div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.laporan_masuk', status='Sedang Ditinjau') }}"
+           class="stat-card {% if status_filter == 'Sedang Ditinjau' %}active-filter{% endif %}">
+            <div class="stat-number text-success">{{ total_ditinjau }}</div>
+            <div class="stat-label"><i class="bi bi-eye me-1"></i>Sedang Ditinjau</div>
+        </a>
+    </div>
+    <div class="col-6 col-md-3">
+        <a href="{{ url_for('admin.laporan_masuk', status='Perlu Revisi') }}"
+           class="stat-card {% if status_filter == 'Perlu Revisi' %}active-filter{% endif %}">
+            <div class="stat-number text-danger">{{ total_revisi }}</div>
+            <div class="stat-label"><i class="bi bi-exclamation-circle me-1"></i>Perlu Revisi</div>
+        </a>
+    </div>
+</div>
+
+{# ── Data Table ── #}
+<div class="card card-custom border-0 shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table laporan-table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th class="ps-4">#</th>
+                    <th>Nama Usaha</th>
+                    <th>Pemilik Usaha</th>
+                    <th>Periode Laporan</th>
+                    <th>Tanggal Kirim</th>
+                    <th>Status</th>
+                    <th class="text-end pe-4">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if laporan_list %}
+                    {% for lap in laporan_list %}
+                    <tr>
+                        {# No. #}
+                        <td class="ps-4 fw-semibold text-muted">{{ loop.index }}</td>
+
+                        {# Nama Usaha #}
+                        <td>
+                            <div class="fw-bold text-dark">
+                                {{ lap.business.business_name if lap.business else '—' }}
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-shop me-1"></i>
+                                {% if lap.business %}
+                                    <a href="{{ url_for('admin.business_detail', business_id=lap.business.id) }}"
+                                       class="text-muted text-decoration-none">
+                                        Lihat Usaha
+                                    </a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </small>
+                        </td>
+
+                        {# Pemilik Usaha #}
+                        <td>
+                            {% if lap.sender %}
+                                <div class="fw-semibold text-dark">{{ lap.sender.full_name }}</div>
+                                <small class="text-muted">
+                                    <i class="bi bi-person me-1"></i>{{ lap.sender.username }}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+
+                        {# Periode Laporan #}
+                        <td>
+                            <div class="fw-semibold">{{ lap.periode_label }}</div>
+                            <small class="text-muted">
+                                {{ lap.start_date.strftime('%d %b %Y') }}
+                                {% if lap.start_date != lap.end_date %}
+                                    &ndash; {{ lap.end_date.strftime('%d %b %Y') }}
+                                {% endif %}
+                            </small>
+                        </td>
+
+                        {# Tanggal Kirim #}
+                        <td>
+                            {% set wib_time = lap.submitted_at | to_wib %}
+                            <div class="fw-semibold">{{ wib_time.strftime('%d %b %Y') }}</div>
+                            <small class="text-muted">{{ wib_time.strftime('%H:%M') }} WIB</small>
+                        </td>
+
+                        {# Status Badge #}
+                        <td>
+                            {% if lap.status == 'Belum Ditinjau' %}
+                                <span class="badge badge-belum rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-hourglass-split me-1"></i>{{ lap.status }}
+                                </span>
+                            {% elif lap.status == 'Sedang Ditinjau' %}
+                                <span class="badge badge-ditinjau rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-eye me-1"></i>{{ lap.status }}
+                                </span>
+                            {% elif lap.status == 'Perlu Revisi' %}
+                                <span class="badge badge-revisi rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ lap.status }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 fw-semibold">
+                                    {{ lap.status }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        {# Aksi #}
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end align-items-center gap-2">
+                                {# Buka PDF #}
+                                {% if lap.file_path %}
+                                <a href="{{ url_for('admin.buka_pdf_laporan', laporan_id=lap.id) }}"
+                                   target="_blank"
+                                   class="btn btn-outline-danger btn-sm rounded-3 px-2 py-1"
+                                   title="Buka PDF">
+                                    <i class="bi bi-file-earmark-pdf-fill"></i>
+                                </a>
+                                {% endif %}
+
+                                {# Lihat Detail (trigger modal) #}
+                                <button type="button"
+                                        class="btn btn-outline-info btn-sm rounded-3 px-2 py-1"
+                                        title="Lihat Detail"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalDetail{{ lap.id }}">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+
+                                {# Ubah Status #}
+                                <button type="button"
+                                        class="btn btn-outline-secondary btn-sm rounded-3 px-2 py-1"
+                                        title="Ubah Status"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalStatus{{ lap.id }}">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    {# ── Modal: Detail Laporan ── #}
+                    <div class="modal fade" id="modalDetail{{ lap.id }}" tabindex="-1"
+                         aria-labelledby="modalDetailLabel{{ lap.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content rounded-4 border-0 shadow">
+                                <div class="modal-header border-bottom-0 pb-0">
+                                    <h5 class="modal-title fw-bold" id="modalDetailLabel{{ lap.id }}">
+                                        <i class="bi bi-file-earmark-text-fill text-primary me-2"></i>
+                                        Detail Laporan — {{ lap.business.business_name if lap.business else 'Usaha tidak ditemukan' }}
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                                </div>
+                                <div class="modal-body py-3">
+                                    <div class="row g-3">
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3">
+                                                <div class="small fw-bold text-secondary mb-1">
+                                                    <i class="bi bi-shop me-1"></i>Nama Usaha
+                                                </div>
+                                                <div class="fw-bold">
+                                                    {{ lap.business.business_name if lap.business else '—' }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3">
+                                                <div class="small fw-bold text-secondary mb-1">
+                                                    <i class="bi bi-person me-1"></i>Pemilik Usaha
+                                                </div>
+                                                <div class="fw-bold">
+                                                    {{ lap.sender.full_name if lap.sender else '—' }}
+                                                </div>
+                                                {% if lap.sender %}
+                                                <small class="text-muted">@{{ lap.sender.username }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3">
+                                                <div class="small fw-bold text-secondary mb-1">
+                                                    <i class="bi bi-calendar3 me-1"></i>Periode Laporan
+                                                </div>
+                                                <div class="fw-bold">{{ lap.periode_label }}</div>
+                                                <small class="text-muted">
+                                                    {{ lap.start_date.strftime('%d %b %Y') }}
+                                                    {% if lap.start_date != lap.end_date %}
+                                                        &ndash; {{ lap.end_date.strftime('%d %b %Y') }}
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3">
+                                                <div class="small fw-bold text-secondary mb-1">
+                                                    <i class="bi bi-send me-1"></i>Tanggal Pengiriman
+                                                </div>
+                                                <div class="fw-bold">
+                                                    {{ (lap.submitted_at | to_wib).strftime('%d %B %Y') }}
+                                                </div>
+                                                <small class="text-muted">
+                                                    Pukul {{ (lap.submitted_at | to_wib).strftime('%H:%M') }} WIB
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3">
+                                                <div class="small fw-bold text-secondary mb-1">
+                                                    <i class="bi bi-flag me-1"></i>Status Tinjauan
+                                                </div>
+                                                {% if lap.status == 'Belum Ditinjau' %}
+                                                    <span class="badge badge-belum rounded-pill px-3 py-1 fw-semibold">
+                                                        <i class="bi bi-hourglass-split me-1"></i>{{ lap.status }}
+                                                    </span>
+                                                {% elif lap.status == 'Sedang Ditinjau' %}
+                                                    <span class="badge badge-ditinjau rounded-pill px-3 py-1 fw-semibold">
+                                                        <i class="bi bi-eye me-1"></i>{{ lap.status }}
+                                                    </span>
+                                                {% elif lap.status == 'Perlu Revisi' %}
+                                                    <span class="badge badge-revisi rounded-pill px-3 py-1 fw-semibold">
+                                                        <i class="bi bi-exclamation-circle me-1"></i>{{ lap.status }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">{{ lap.status }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3">
+                                                <div class="small fw-bold text-secondary mb-1">
+                                                    <i class="bi bi-file-earmark-pdf me-1"></i>File PDF
+                                                </div>
+                                                {% if lap.file_path %}
+                                                    <a href="{{ url_for('admin.buka_pdf_laporan', laporan_id=lap.id) }}"
+                                                       target="_blank"
+                                                       class="btn btn-outline-danger btn-sm rounded-3 fw-semibold">
+                                                        <i class="bi bi-box-arrow-up-right me-1"></i>Buka PDF
+                                                    </a>
+                                                {% else %}
+                                                    <span class="text-muted small">File tidak tersedia</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-top-0">
+                                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Tutup</button>
+                                    <button type="button"
+                                            class="btn btn-primary rounded-3 fw-bold"
+                                            data-bs-dismiss="modal"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalStatus{{ lap.id }}">
+                                        <i class="bi bi-pencil-square me-1"></i>Ubah Status
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ── Modal: Ubah Status ── #}
+                    <div class="modal fade" id="modalStatus{{ lap.id }}" tabindex="-1"
+                         aria-labelledby="modalStatusLabel{{ lap.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-4 border-0 shadow">
+                                <div class="modal-header border-bottom-0 pb-0">
+                                    <h5 class="modal-title fw-bold" id="modalStatusLabel{{ lap.id }}">
+                                        <i class="bi bi-pencil-square text-primary me-2"></i>Ubah Status Laporan
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                                </div>
+                                <form action="{{ url_for('admin.update_status_laporan', laporan_id=lap.id) }}"
+                                      method="POST">
+                                    <div class="modal-body py-3">
+                                        <p class="text-muted small mb-3">
+                                            Laporan dari
+                                            <strong>{{ lap.business.business_name if lap.business else '—' }}</strong>
+                                            untuk periode <strong>{{ lap.periode_label }}</strong>.
+                                        </p>
+                                        <label class="form-label fw-semibold small text-secondary">
+                                            Status Tinjauan
+                                        </label>
+                                        <select name="status" class="form-select status-select rounded-3">
+                                            <option value="Belum Ditinjau"  {% if lap.status == 'Belum Ditinjau' %}selected{% endif %}>
+                                                ⏳ Belum Ditinjau
+                                            </option>
+                                            <option value="Sedang Ditinjau" {% if lap.status == 'Sedang Ditinjau' %}selected{% endif %}>
+                                                👁 Sedang Ditinjau
+                                            </option>
+                                            <option value="Perlu Revisi"    {% if lap.status == 'Perlu Revisi' %}selected{% endif %}>
+                                                ⚠️ Perlu Revisi
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="modal-footer border-top-0 pt-0">
+                                        <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-primary rounded-3 fw-bold">
+                                            <i class="bi bi-check-circle me-1"></i>Simpan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% endfor %}
+                {% else %}
+                    {# Empty state #}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <i class="bi bi-inbox d-block mb-2 text-muted" style="font-size: 2.5rem;"></i>
+                            <p class="fw-semibold text-muted mb-1">Belum ada laporan yang masuk.</p>
+                            {% if status_filter and status_filter != 'semua' %}
+                                <small class="text-muted">
+                                    Tidak ada laporan dengan status
+                                    "<strong>{{ status_filter }}</strong>".
+                                    <a href="{{ url_for('admin.laporan_masuk') }}" class="text-primary">Lihat semua</a>
+                                </small>
+                            {% else %}
+                                <small class="text-muted">
+                                    Laporan akan muncul di sini setelah Pemilik Usaha menekan tombol "Kirim ke Admin"
+                                    pada halaman Laporan Keuangan.
+                                </small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if laporan_list %}
+    <div class="px-4 py-2 border-top d-flex align-items-center justify-content-between">
+        <small class="text-muted">
+            Menampilkan <strong>{{ laporan_list | length }}</strong>
+            {% if status_filter and status_filter != 'semua' %}
+                laporan dengan status "<strong>{{ status_filter }}</strong>"
+            {% else %}
+                laporan dari total <strong>{{ total_all }}</strong>
+            {% endif %}
+        </small>
+        {% if status_filter and status_filter != 'semua' %}
+            <a href="{{ url_for('admin.laporan_masuk') }}" class="btn btn-outline-secondary btn-sm rounded-3">
+                <i class="bi bi-x-circle me-1"></i>Hapus Filter
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

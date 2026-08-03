@@ -153,6 +153,10 @@
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'admin.users_list' or request.endpoint == 'admin.user_detail' %}active{% endif %}">
                     Manajemen Akun
                 </a>
+                <a href="{{ url_for('admin.laporan_masuk') }}"
+                   class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint and 'admin.laporan' in request.endpoint %}active{% endif %}">
+                    Laporan Masuk
+                </a>
                 <a href="{{ url_for('auth.profil') }}"
                    class="nav-link-item flex-fill flex-md-grow-0 {% if request.endpoint == 'auth.profil' %}active{% endif %}">
                     Profil Saya
