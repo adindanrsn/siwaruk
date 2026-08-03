@@ -274,33 +274,60 @@
      aria-labelledby="modalKirimAdminLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
-            <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="modalKirimAdminLabel">
-                    <i class="bi bi-send-fill text-primary me-2"></i>Kirim Laporan ke Admin
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-            </div>
-            <div class="modal-body py-3">
-                <div class="alert alert-info py-2 px-3 small d-flex align-items-start gap-2 rounded-3 mb-3">
-                    <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
-                    <div>
-                        Laporan untuk periode <strong id="kirimPeriodeLabel">{{ formatted_periode }}</strong>
-                        akan dikirimkan ke Admin dalam format PDF.
-                    </div>
+
+            {# ── Confirm View ── #}
+            <div id="kirimConfirmView">
+                <div class="modal-header border-bottom-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="modalKirimAdminLabel">
+                        <i class="bi bi-send-fill text-primary me-2"></i>Kirim Laporan ke Admin
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-                <p class="text-muted small mb-0">
-                    <i class="bi bi-check-circle me-1 text-success"></i>
-                    Admin akan menerima notifikasi dan dapat meninjau laporan Anda.
-                </p>
+                <div class="modal-body py-3">
+                    <div class="alert alert-info py-2 px-3 small d-flex align-items-start gap-2 rounded-3 mb-3">
+                        <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+                        <div>
+                            Laporan untuk periode <strong id="kirimPeriodeLabel">{{ formatted_periode }}</strong>
+                            akan dikirimkan ke Admin dalam format PDF.
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-check-circle me-1 text-success"></i>
+                        Admin akan menerima notifikasi dan dapat meninjau laporan Anda.
+                    </p>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary rounded-3 fw-bold" id="btnKonfirmasiKirim">
+                        <span id="kirimSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
+                        <i class="bi bi-send-fill me-1" id="kirimIcon"></i>
+                        Kirim Sekarang
+                    </button>
+                </div>
             </div>
-            <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-primary rounded-3 fw-bold" id="btnKonfirmasiKirim">
-                    <span id="kirimSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
-                    <i class="bi bi-send-fill me-1" id="kirimIcon"></i>
-                    Kirim Sekarang
-                </button>
+
+            {# ── Success View (with WhatsApp Button) ── #}
+            <div id="kirimSuccessView" class="d-none">
+                <div class="modal-header border-bottom-0 pb-0 justify-content-end">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body px-4 pb-4 pt-0 text-center">
+                    <div class="mb-3 text-success">
+                        <i class="bi bi-check-circle-fill display-3"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">Laporan Berhasil Dikirim!</h5>
+                    <p class="text-muted small mb-4">
+                        Laporan usaha <strong id="successBizName"></strong> untuk periode <strong id="successPeriodeLabel"></strong> telah resmi tersimpan di database Siwaruk.
+                    </p>
+                    <a id="btnWaAdmin" href="#" target="_blank" class="btn btn-success btn-lg w-100 rounded-3 fw-bold py-2.5 px-3 mb-2 shadow-sm">
+                        <i class="bi bi-whatsapp me-2"></i>Hubungi Admin via WhatsApp
+                    </a>
+                    <button type="button" class="btn btn-light w-100 rounded-3 text-muted small" data-bs-dismiss="modal">
+                        Tutup
+                    </button>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
@@ -578,14 +605,21 @@
 <script>
     /* ── Kirim ke Admin — AJAX Handler ── */
     (function () {
-        const btnKonfirmasi = document.getElementById('btnKonfirmasiKirim');
-        const spinner       = document.getElementById('kirimSpinner');
-        const kirimIcon     = document.getElementById('kirimIcon');
-        const kirimLabel    = document.getElementById('kirimPeriodeLabel');
-        const toastOk       = document.getElementById('toastKirimBerhasil');
-        const toastErr      = document.getElementById('toastKirimGagal');
-        const toastMsg      = document.getElementById('toastKirimMsg');
-        const toastErrMsg   = document.getElementById('toastGagalMsg');
+        const btnKonfirmasi   = document.getElementById('btnKonfirmasiKirim');
+        const spinner         = document.getElementById('kirimSpinner');
+        const kirimIcon       = document.getElementById('kirimIcon');
+        const kirimLabel      = document.getElementById('kirimPeriodeLabel');
+        const toastOk         = document.getElementById('toastKirimBerhasil');
+        const toastErr        = document.getElementById('toastKirimGagal');
+        const toastMsg        = document.getElementById('toastKirimMsg');
+        const toastErrMsg     = document.getElementById('toastGagalMsg');
+
+        const modalEl         = document.getElementById('modalKirimAdmin');
+        const confirmView     = document.getElementById('kirimConfirmView');
+        const successView     = document.getElementById('kirimSuccessView');
+        const successBizName  = document.getElementById('successBizName');
+        const successPeriode  = document.getElementById('successPeriodeLabel');
+        const btnWaAdmin      = document.getElementById('btnWaAdmin');
 
         /* Update label periode di dalam modal setiap kali periode aktif berubah */
         function updateKirimLabel() {
@@ -600,6 +634,16 @@
 
         /* Sync setelah AJAX filter chart selesai — dipanggil dari handler filterForm */
         document.addEventListener('laporan:periodeUpdated', updateKirimLabel);
+
+        /* Reset modal ke tampilan konfirmasi ketika modal ditutup */
+        if (modalEl) {
+            modalEl.addEventListener('hidden.bs.modal', function () {
+                if (confirmView && successView) {
+                    confirmView.classList.remove('d-none');
+                    successView.classList.add('d-none');
+                }
+            });
+        }
 
         if (!btnKonfirmasi) return;
 
@@ -634,21 +678,32 @@
             })
             .then(res => res.json())
             .then(data => {
-                /* Tutup modal */
-                const modal = bootstrap.Modal.getInstance(
-                    document.getElementById('modalKirimAdmin')
-                );
-                if (modal) modal.hide();
-
                 if (data.status === 'success') {
+                    /* Tampilkan tampilan sukses dengan tombol WhatsApp di dalam modal */
+                    if (successBizName) successBizName.textContent = data.business_name || '';
+                    if (successPeriode) successPeriode.textContent = data.periode_label || '';
+                    if (btnWaAdmin && data.wa_url) btnWaAdmin.href = data.wa_url;
+
+                    if (confirmView && successView) {
+                        confirmView.classList.add('d-none');
+                        successView.classList.remove('d-none');
+                    }
+
                     toastMsg.textContent = data.message || 'Laporan berhasil dikirim ke Admin.';
                     new bootstrap.Toast(toastOk, { delay: 4000 }).show();
                 } else {
+                    /* Jika gagal, tutup modal dan tampilkan toast error */
+                    const modal = bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+
                     toastErrMsg.textContent = data.message || 'Gagal mengirim laporan. Coba lagi.';
                     new bootstrap.Toast(toastErr, { delay: 4000 }).show();
                 }
             })
             .catch(() => {
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                if (modal) modal.hide();
+
                 toastErrMsg.textContent = 'Gagal terhubung ke server. Coba lagi.';
                 new bootstrap.Toast(toastErr, { delay: 4000 }).show();
             })

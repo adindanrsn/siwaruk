@@ -716,9 +716,35 @@ def kirim_ke_admin():
     db.session.add(record)
     db.session.commit()
 
+    # ── 4. Buat WhatsApp Link untuk konfirmasi ───────────────
+    from app.models.user import User
+    from app.utils import normalize_whatsapp_number
+    from urllib.parse import quote
+
+    admin_user = User.query.filter_by(role='admin').first()
+    admin_phone = normalize_whatsapp_number(admin_user.phone) if (admin_user and admin_user.phone) else ''
+
+    message_text = (
+        f"Halo Admin.\n\n"
+        f"Saya telah mengirim laporan usaha melalui aplikasi Siwaruk.\n\n"
+        f"Nama Usaha:\n{active_biz.business_name}\n\n"
+        f"Periode:\n{formatted}\n\n"
+        f"Mohon untuk ditinjau.\n\n"
+        f"Terima kasih."
+    )
+    encoded_text = quote(message_text)
+
+    if admin_phone:
+        wa_url = f"https://wa.me/{admin_phone}?text={encoded_text}"
+    else:
+        wa_url = f"https://wa.me/?text={encoded_text}"
+
     return jsonify({
         'status': 'success',
         'message': 'Laporan berhasil dikirim ke Admin.',
         'id': record.id,
         'periode_label': formatted,
+        'business_name': active_biz.business_name,
+        'wa_url': wa_url
     })
+
