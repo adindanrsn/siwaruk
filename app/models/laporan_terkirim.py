@@ -39,8 +39,8 @@ class LaporanTerkirim(db.Model):
 
     # Status tinjauan admin
     STATUS_BELUM = 'Belum Ditinjau'
-    STATUS_DITINJAU = 'Sedang Ditinjau'
-    STATUS_SELESAI = 'Selesai Ditinjau'
+    STATUS_DITINJAU = 'Sudah Ditinjau'
+    STATUS_REVISI = 'Perlu Revisi'
 
     status = db.Column(db.String(64), nullable=False, default='Belum Ditinjau')
 
@@ -48,7 +48,7 @@ class LaporanTerkirim(db.Model):
     catatan_admin = db.Column(db.Text, nullable=True)
 
     # Relationships
-    business = db.relationship('Business', backref=db.backref('laporan_terkirim', lazy='dynamic'))
+    business = db.relationship('Business', back_populates='laporan_terkirim')
     sender = db.relationship('User', backref=db.backref('laporan_terkirim', lazy='dynamic'))
 
     def __repr__(self):

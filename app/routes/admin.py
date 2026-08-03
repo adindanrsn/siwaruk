@@ -275,13 +275,16 @@ def buka_pdf_laporan(laporan_id):
         flash('File PDF tidak tersedia untuk laporan ini.', 'warning')
         return redirect(url_for('admin.laporan_masuk'))
 
-    # file_path is relative: "laporan_terkirim/<filename>.pdf"
-    directory = os.path.join(current_app.instance_path, 'laporan_terkirim')
-    filename  = os.path.basename(record.file_path)
+    # Resolve clean path relative to instance folder
+    clean_rel_path = record.file_path.replace('/', os.sep).replace('\\', os.sep)
+    full_path = os.path.join(current_app.instance_path, clean_rel_path)
 
-    if not os.path.exists(os.path.join(directory, filename)):
+    if not os.path.exists(full_path):
         flash('File PDF tidak ditemukan di server.', 'danger')
         return redirect(url_for('admin.laporan_masuk'))
+
+    directory = os.path.dirname(full_path)
+    filename  = os.path.basename(full_path)
 
     as_attachment = request.args.get('download', '0') == '1'
     return send_from_directory(

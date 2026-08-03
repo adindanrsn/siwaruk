@@ -249,6 +249,17 @@ def index():
     formatted_periode = format_periode_id(start_wib, end_wib, periode)
     data = get_report_data(active_biz, start_wib, end_wib, periode)
 
+    from app.models.laporan_terkirim import LaporanTerkirim
+    current_report_terkirim = LaporanTerkirim.query.filter_by(
+        business_id=active_biz.id,
+        start_date=start_wib.date(),
+        end_date=end_wib.date()
+    ).order_by(LaporanTerkirim.submitted_at.desc()).first()
+
+    riwayat_laporan_terkirim = LaporanTerkirim.query.filter_by(
+        business_id=active_biz.id
+    ).order_by(LaporanTerkirim.submitted_at.desc()).limit(10).all()
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         # Remove full objects before returning JSON
         data.pop('sales', None)
@@ -259,7 +270,8 @@ def index():
             'start_date': start_wib.strftime('%Y-%m-%d'),
             'end_date': end_wib.strftime('%Y-%m-%d'),
             'formatted_periode': formatted_periode,
-            'data': data
+            'data': data,
+            'sent_status': current_report_terkirim.status if current_report_terkirim else None
         })
 
     return render_template(
@@ -269,7 +281,9 @@ def index():
         start_date=start_wib.strftime('%Y-%m-%d'),
         end_date=end_wib.strftime('%Y-%m-%d'),
         formatted_periode=formatted_periode,
-        data=data
+        data=data,
+        current_report_terkirim=current_report_terkirim,
+        riwayat_laporan_terkirim=riwayat_laporan_terkirim
     )
 
 def _generate_daily_rekap(start_wib, end_wib, data):
@@ -727,7 +741,7 @@ def kirim_ke_admin():
     message_text = (
         f"Halo Admin.\n\n"
         f"Saya telah mengirim laporan usaha melalui aplikasi Siwaruk.\n\n"
-        f"Nama Usaha:\n{active_biz.business_name}\n\n"
+        f"Nama usaha:\n{active_biz.business_name}\n\n"
         f"Periode:\n{formatted}\n\n"
         f"Mohon untuk ditinjau.\n\n"
         f"Terima kasih."

@@ -133,8 +133,82 @@
             </form>
         </div>
 
+        <!-- Section 3: PERINGATAN!!! (Hapus Akun) — Khusus Pemilik Usaha -->
+        {% if current_user.role == 'owner' %}
+        <div class="card card-custom border border-danger border-opacity-25 shadow-sm p-4 p-md-5 mb-4 bg-danger bg-opacity-10">
+            <div class="d-flex align-items-center gap-3 mb-3 border-bottom border-danger border-opacity-25 pb-3">
+                <div class="p-3 rounded-circle text-white shadow-sm bg-danger flex-shrink-0">
+                    <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-danger">PERINGATAN!!!</h5>
+                    <small class="text-muted">Tindakan permanen yang memengaruhi seluruh data akun Anda</small>
+                </div>
+            </div>
+
+            <p class="text-secondary small mb-3">
+                Menghapus akun akan menghapus seluruh data usaha, produk, transaksi, dan laporan Anda secara permanen dari sistem Siwaruk.
+            </p>
+
+            <div class="text-end">
+                <button type="button"
+                        class="btn btn-danger fw-bold rounded-3 px-4 py-2"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalHapusAkun">
+                    <i class="bi bi-trash3-fill me-1"></i> Hapus Akun
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
+
+{# ══════════════════════════════════════
+   MODAL — Konfirmasi Hapus Akun
+══════════════════════════════════════ #}
+{% if current_user.role == 'owner' %}
+<div class="modal fade" id="modalHapusAkun" tabindex="-1" aria-labelledby="modalHapusAkunLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="modalHapusAkunLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Hapus Akun
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body py-3">
+                <h6 class="fw-bold text-dark mb-3">Apakah Anda yakin ingin menghapus akun ini?</h6>
+
+                <div class="alert alert-danger py-3 px-3 small rounded-3 mb-0">
+                    <div class="fw-bold mb-2">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        Tindakan ini tidak dapat dibatalkan dan seluruh data yang berkaitan dengan akun akan ikut terhapus, termasuk:
+                    </div>
+                    <ul class="mb-0 ps-3">
+                        <li>data usaha,</li>
+                        <li>produk,</li>
+                        <li>kategori,</li>
+                        <li>transaksi pemasukan,</li>
+                        <li>transaksi pengeluaran,</li>
+                        <li>laporan,</li>
+                        <li>serta seluruh data lain yang terkait dengan akun.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                <form action="{{ url_for('auth.profil') }}" method="POST" class="d-inline">
+                    <input type="hidden" name="action" value="delete_account">
+                    <button type="submit" class="btn btn-danger rounded-3 fw-bold">
+                        <i class="bi bi-trash3-fill me-1"></i> Ya, Hapus Akun Permanen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

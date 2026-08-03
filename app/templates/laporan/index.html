@@ -60,7 +60,22 @@
             {% else %}
                 <span class="periode-badge custom" id="headerPeriodeBadge"><span>⚪</span> Custom</span>
             {% endif %}
-            <span class="text-muted small" id="headerPeriodeDate">{{ formatted_periode }}</span>
+            <span class="text-muted small me-2" id="headerPeriodeDate">{{ formatted_periode }}</span>
+            {% if current_report_terkirim %}
+                {% if current_report_terkirim.status == 'Belum Ditinjau' %}
+                    <span class="badge badge-laporan-belum rounded-pill px-3 py-1 fw-semibold" id="headerStatusBadge">
+                        🟡 Belum Ditinjau
+                    </span>
+                {% elif current_report_terkirim.status == 'Sudah Ditinjau' or current_report_terkirim.status == 'Sedang Ditinjau' %}
+                    <span class="badge badge-laporan-ditinjau rounded-pill px-3 py-1 fw-semibold" id="headerStatusBadge">
+                        🔵 Sudah Ditinjau
+                    </span>
+                {% elif current_report_terkirim.status == 'Perlu Revisi' %}
+                    <span class="badge badge-laporan-revisi rounded-pill px-3 py-1 fw-semibold" id="headerStatusBadge">
+                        🔴 Perlu Revisi
+                    </span>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
     <div class="d-flex gap-2 flex-shrink-0 flex-wrap">
@@ -259,6 +274,59 @@
         </div>
     </div>
 </div>
+
+{% if riwayat_laporan_terkirim %}
+<div class="card card-custom border-0 shadow-sm mt-4">
+    <div class="card-header bg-white border-bottom pt-4 pb-3">
+        <h6 class="fw-bold mb-0">
+            <i class="bi bi-clock-history text-primary me-2"></i>Status Laporan yang Dikirim ke Admin
+        </h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-4">#</th>
+                    <th>Periode Laporan</th>
+                    <th>Tanggal Pengiriman</th>
+                    <th class="text-end pe-4">Status Tinjauan Admin</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in riwayat_laporan_terkirim %}
+                <tr>
+                    <td class="ps-4 fw-semibold text-muted">{{ loop.index }}</td>
+                    <td class="fw-bold text-dark">{{ r.periode_label }}</td>
+                    <td class="text-muted small">
+                        {% set wtime = r.submitted_at | to_wib %}
+                        {{ wtime.strftime('%d %b %Y, %H:%M') }} WIB
+                    </td>
+                    <td class="text-end pe-4">
+                        {% if r.status == 'Belum Ditinjau' %}
+                            <span class="badge badge-laporan-belum rounded-pill px-3 py-1 fw-semibold">
+                                🟡 Belum Ditinjau
+                            </span>
+                        {% elif r.status == 'Sudah Ditinjau' or r.status == 'Sedang Ditinjau' %}
+                            <span class="badge badge-laporan-ditinjau rounded-pill px-3 py-1 fw-semibold">
+                                🔵 Sudah Ditinjau
+                            </span>
+                        {% elif r.status == 'Perlu Revisi' %}
+                            <span class="badge badge-laporan-revisi rounded-pill px-3 py-1 fw-semibold">
+                                🔴 Perlu Revisi
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">
+                                {{ r.status }}
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
 
 <div class="text-muted small mt-4 text-center">
     <i class="bi bi-info-circle me-1"></i> Data laporan mengikuti zona waktu Asia/Jakarta (WIB) dan diperbarui saat ini.

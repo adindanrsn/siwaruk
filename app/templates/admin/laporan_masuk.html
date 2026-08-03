@@ -125,10 +125,10 @@
         </a>
     </div>
     <div class="col-6 col-md-3">
-        <a href="{{ url_for('admin.laporan_masuk', status='Sedang Ditinjau') }}"
-           class="stat-card {% if status_filter == 'Sedang Ditinjau' %}active-filter{% endif %}">
-            <div class="stat-number text-success">{{ total_ditinjau }}</div>
-            <div class="stat-label"><i class="bi bi-eye me-1"></i>Sedang Ditinjau</div>
+        <a href="{{ url_for('admin.laporan_masuk', status='Sudah Ditinjau') }}"
+           class="stat-card {% if status_filter == 'Sudah Ditinjau' or status_filter == 'Sedang Ditinjau' %}active-filter{% endif %}">
+            <div class="stat-number text-primary">{{ total_ditinjau }}</div>
+            <div class="stat-label"><i class="bi bi-check-circle me-1"></i>Sudah Ditinjau</div>
         </a>
     </div>
     <div class="col-6 col-md-3">
@@ -213,16 +213,16 @@
                         {# Status Badge #}
                         <td>
                             {% if lap.status == 'Belum Ditinjau' %}
-                                <span class="badge badge-belum rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="bi bi-hourglass-split me-1"></i>{{ lap.status }}
+                                <span class="badge badge-laporan-belum rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-hourglass-split me-1"></i>Belum Ditinjau
                                 </span>
-                            {% elif lap.status == 'Sedang Ditinjau' %}
-                                <span class="badge badge-ditinjau rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="bi bi-eye me-1"></i>{{ lap.status }}
+                            {% elif lap.status == 'Sudah Ditinjau' or lap.status == 'Sedang Ditinjau' %}
+                                <span class="badge badge-laporan-ditinjau rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-check-circle me-1"></i>Sudah Ditinjau
                                 </span>
                             {% elif lap.status == 'Perlu Revisi' %}
-                                <span class="badge badge-revisi rounded-pill px-3 py-1 fw-semibold">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ lap.status }}
+                                <span class="badge badge-laporan-revisi rounded-pill px-3 py-1 fw-semibold">
+                                    <i class="bi bi-exclamation-circle me-1"></i>Perlu Revisi
                                 </span>
                             {% else %}
                                 <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1 fw-semibold">
@@ -405,13 +405,13 @@
                                         </label>
                                         <select name="status" class="form-select status-select rounded-3">
                                             <option value="Belum Ditinjau"  {% if lap.status == 'Belum Ditinjau' %}selected{% endif %}>
-                                                ⏳ Belum Ditinjau
+                                                🟡 Belum Ditinjau
                                             </option>
-                                            <option value="Sedang Ditinjau" {% if lap.status == 'Sedang Ditinjau' %}selected{% endif %}>
-                                                👁 Sedang Ditinjau
+                                            <option value="Sudah Ditinjau" {% if lap.status == 'Sudah Ditinjau' or lap.status == 'Sedang Ditinjau' %}selected{% endif %}>
+                                                🔵 Sudah Ditinjau
                                             </option>
                                             <option value="Perlu Revisi"    {% if lap.status == 'Perlu Revisi' %}selected{% endif %}>
-                                                ⚠️ Perlu Revisi
+                                                🔴 Perlu Revisi
                                             </option>
                                         </select>
                                     </div>
