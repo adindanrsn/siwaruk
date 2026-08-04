@@ -21,6 +21,14 @@ FORGOT_PASSWORD_MESSAGE = (
 )
 
 
+CONSULTATION_MESSAGE = (
+    "Halo Admin.\n\n"
+    "Saya ingin berkonsultasi mengenai aplikasi Siwaruk.\n\n"
+    "Mohon bantuannya.\n\n"
+    "Terima kasih."
+)
+
+
 def normalize_whatsapp_number(phone: str) -> str:
     """
     Normalizes a phone number to standard Indonesian WhatsApp format (628...).
@@ -28,34 +36,36 @@ def normalize_whatsapp_number(phone: str) -> str:
     """
     if not phone:
         return ""
-    
-    # Remove all non-digit and non-plus characters
-    cleaned = re.sub(r'[^\d+]', '', phone)
-    
-    if cleaned.startswith('+'):
-        cleaned = cleaned[1:]
-        
-    if cleaned.startswith('0'):
-        cleaned = '62' + cleaned[1:]
-        
-    return cleaned
+
+    # Remove all non-digit characters except leading plus
+    digits = re.sub(r'\D', '', phone)
+
+    if digits.startswith('0'):
+        return '62' + digits[1:]
+    elif digits.startswith('62'):
+        return digits
+    elif digits.startswith('8'):
+        return '62' + digits
+
+    return digits
 
 
 def is_valid_whatsapp_number(phone: str) -> bool:
     """
     Validates if a phone number is a valid WhatsApp number.
-    Must contain only digits (and optional leading +), and have reasonable length (9-15 digits).
+    Must consist of digits (optional + prefix) and length between 9-15 chars.
     """
     if not phone:
         return False
     
-    # Must only contain digits and optional leading +
-    if not re.match(r'^\+?\d+$', phone):
+    cleaned = re.sub(r'[\s\-]', '', phone)
+    if cleaned.startswith('+'):
+        cleaned = cleaned[1:]
+    
+    if not cleaned.isdigit():
         return False
         
-    # Check length of digits
-    digits_only = re.sub(r'\D', '', phone)
-    if len(digits_only) < 9 or len(digits_only) > 15:
+    if len(cleaned) < 9 or len(cleaned) > 15:
         return False
         
     return True
@@ -65,19 +75,26 @@ def get_whatsapp_link(message_type: str) -> str:
     """
     Generate an encoded WhatsApp URL for contacting admin.
 
-    :param message_type: 'register' or 'forgot_password'
+    :param message_type: 'register', 'forgot_password', or 'consultation'
     :return: Full WhatsApp URL string with pre-filled encoded text message.
     """
-    admin_user = User.query.filter_by(role='admin').first()
-    if not admin_user or not admin_user.phone:
-        return ""
+    import os
+    env_wa = current_app.config.get('WHATSAPP_ADMIN') or os.getenv('WHATSAPP_ADMIN', '')
 
-    wa_number = normalize_whatsapp_number(admin_user.phone)
+    if env_wa:
+        wa_number = normalize_whatsapp_number(env_wa)
+    else:
+        admin_user = User.query.filter_by(role='admin').first()
+        if not admin_user or not admin_user.phone:
+            return ""
+        wa_number = normalize_whatsapp_number(admin_user.phone)
 
     if message_type == "register":
         message_text = REGISTER_MESSAGE
     elif message_type == "forgot_password":
         message_text = FORGOT_PASSWORD_MESSAGE
+    elif message_type in ["consultation", "floating"]:
+        message_text = CONSULTATION_MESSAGE
     else:
         message_text = ""
 

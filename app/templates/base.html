@@ -208,6 +208,18 @@
         </div>
     </main>
 
+    <!-- Floating WhatsApp Button (Only shown when user is authenticated) -->
+    {% if current_user.is_authenticated and wa_consultation_link %}
+    <a href="{{ wa_consultation_link }}"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="floating-wa-btn"
+       aria-label="Hubungi Admin via WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+        <span class="floating-wa-tooltip d-none d-lg-block">Hubungi Admin</span>
+    </a>
+    {% endif %}
+
     <!-- Footer -->
     <footer class="py-3 text-center text-muted small mt-auto">
         <div class="container">

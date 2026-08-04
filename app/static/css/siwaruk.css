@@ -886,3 +886,92 @@ small, .small, .text-muted, caption {
     border: 1px solid #FCA5A5 !important;
 }
 
+/* ===================================================================
+   22. FLOATING WHATSAPP BUTTON — Global Admin Consultation Widget
+   =================================================================== */
+
+.floating-wa-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    background-color: #25D366;
+    color: #ffffff !important;
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.45);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+    text-decoration: none !important;
+}
+
+.floating-wa-btn:hover {
+    transform: translateY(-4px) scale(1.06);
+    box-shadow: 0 8px 22px rgba(37, 211, 102, 0.6);
+    background-color: #20BA5A;
+    color: #ffffff !important;
+}
+
+.floating-wa-btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+.floating-wa-btn .bi-whatsapp {
+    font-size: 1.85rem;
+    line-height: 1;
+}
+
+/* Desktop Tooltip */
+.floating-wa-tooltip {
+    position: absolute;
+    right: 66px;
+    white-space: nowrap;
+    background-color: #1F2937;
+    color: #FFFFFF;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: translateX(10px);
+}
+
+.floating-wa-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -5px;
+    transform: translateY(-50%);
+    border-width: 5px 0 5px 5px;
+    border-style: solid;
+    border-color: transparent transparent transparent #1F2937;
+}
+
+.floating-wa-btn:hover .floating-wa-tooltip {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 767.98px) {
+    .floating-wa-btn {
+        bottom: 20px;
+        right: 18px;
+        width: 48px;
+        height: 48px;
+        box-shadow: 0 3px 10px rgba(37, 211, 102, 0.4);
+    }
+    .floating-wa-btn .bi-whatsapp {
+        font-size: 1.6rem;
+    }
+    .floating-wa-tooltip {
+        display: none !important;
+    }
+}
+

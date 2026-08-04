@@ -55,6 +55,7 @@ def create_app():
         return {
             'wa_register_link': get_whatsapp_link('register'),
             'wa_forgot_password_link': get_whatsapp_link('forgot_password'),
+            'wa_consultation_link': get_whatsapp_link('consultation'),
             'active_business': active_biz,
             'user_businesses': user_bizs,
         }

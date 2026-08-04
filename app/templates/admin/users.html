@@ -15,11 +15,12 @@
     </div>
 </div>
 
-<div class="card card-custom border-0 shadow-sm overflow-hidden">
+<!-- Desktop View: Table Layout (≥ 768px) -->
+<div class="card card-custom border-0 shadow-sm overflow-hidden d-none d-md-block">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
-                <tr>
+                <tr class="text-nowrap">
                     <th scope="col" class="ps-4">#</th>
                     <th scope="col">Nama Lengkap / Username</th>
                     <th scope="col">Role</th>
@@ -31,19 +32,19 @@
             <tbody>
                 {% for u in users %}
                 <tr>
-                    <td class="ps-4 fw-semibold text-muted">{{ loop.index }}</td>
-                    <td>
+                    <td class="ps-4 fw-semibold text-muted text-nowrap">{{ loop.index }}</td>
+                    <td class="text-nowrap">
                         <div class="fw-bold text-dark">{{ u.full_name }}</div>
                         <small class="text-muted"><i class="bi bi-person me-1"></i>{{ u.username }}</small>
                     </td>
-                    <td>
+                    <td class="text-nowrap">
                         {% if u.role == 'admin' %}
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1">Admin</span>
                         {% else %}
                             <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">Pemilik Usaha</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td class="text-nowrap">
                         {% if u.role == 'admin' %}
                             <span class="text-muted small">-</span>
                         {% else %}
@@ -59,7 +60,7 @@
                             {% endif %}
                         {% endif %}
                     </td>
-                    <td>
+                    <td class="text-nowrap">
                         {% if u.must_change_password %}
                             <span class="badge bg-warning text-dark rounded-pill px-3 py-1">
                                 <i class="bi bi-exclamation-circle me-1"></i> Wajib Ganti Password
@@ -70,59 +71,29 @@
                             </span>
                         {% endif %}
                     </td>
-                    <td class="text-end pe-4">
+                    <td class="text-end pe-4 text-nowrap">
                         <div class="d-flex justify-content-end align-items-center gap-2">
-                            <a href="{{ url_for('admin.user_detail', user_id=u.id) }}" class="btn btn-outline-info btn-sm rounded-pill px-3" title="Lihat Detail">
+                            <a href="{{ url_for('admin.user_detail', user_id=u.id) }}"
+                               class="btn btn-outline-info btn-sm rounded-pill px-3"
+                               title="Lihat Detail Akun">
                                 <i class="bi bi-eye-fill me-1"></i> Detail
                             </a>
                             {% if u.role != 'admin' %}
-                                <button type="button" class="btn btn-outline-warning btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#confirmResetModal{{ u.id }}">
+                                <button type="button"
+                                        class="btn btn-outline-warning btn-sm rounded-pill px-3"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#confirmResetModal{{ u.id }}"
+                                        title="Reset Password Akun">
                                     <i class="bi bi-key-fill me-1"></i> Reset Password
                                 </button>
                             {% else %}
-                                <span class="text-muted small d-inline-flex align-items-center" title="Password Admin tidak dapat direset dari halaman ini">
+                                <span class="text-muted small d-inline-flex align-items-center px-2 py-1" title="Password Admin tidak dapat direset dari halaman ini">
                                     <i class="bi bi-shield-lock me-1"></i> Terlindungi
                                 </span>
                             {% endif %}
                         </div>
                     </td>
                 </tr>
-
-                {% if u.role != 'admin' %}
-                <!-- Modal Konfirmasi Reset Password untuk User {{ u.id }} -->
-                <div class="modal fade" id="confirmResetModal{{ u.id }}" tabindex="-1" aria-labelledby="confirmResetModalLabel{{ u.id }}" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content rounded-4 border-0 shadow">
-                            <div class="modal-header border-bottom-0 pb-0">
-                                <h5 class="modal-title fw-bold" id="confirmResetModalLabel{{ u.id }}">
-                                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Konfirmasi Reset Password
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body py-3">
-                                <p class="mb-2 fs-6 text-dark">Apakah Anda yakin ingin mereset password akun ini?</p>
-                                <div class="bg-light p-3 rounded-3 border">
-                                    <div class="small text-muted mb-1">Target Akun Pengguna:</div>
-                                    <div class="fw-bold text-dark">{{ u.full_name }}</div>
-                                    <small class="text-muted"><i class="bi bi-person me-1"></i>Username: <strong>{{ u.username }}</strong></small>
-                                </div>
-                                <small class="text-muted mt-2 d-block">
-                                    <i class="bi bi-info-circle me-1"></i> Sistem akan secara otomatis mengacak password sementara baru dan mengharuskan pengguna mengganti kata sandi saat login berikutnya.
-                                </small>
-                            </div>
-                            <div class="modal-footer border-top-0 pt-0">
-                                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
-                                <form action="{{ url_for('admin.reset_password', user_id=u.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-warning rounded-3 fw-bold">
-                                        <i class="bi bi-key-fill me-1"></i> Reset Password
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
                 {% else %}
                 <tr>
                     <td colspan="6" class="text-center py-4 text-muted">Belum ada akun terdaftar.</td>
@@ -132,6 +103,119 @@
         </table>
     </div>
 </div>
+
+<!-- Mobile View: Responsive Card Layout (< 768px) -->
+<div class="d-block d-md-none">
+    {% for u in users %}
+    <div class="card card-custom border-0 shadow-sm mb-3 p-3">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <h6 class="fw-bold text-dark mb-1">{{ u.full_name }}</h6>
+                <small class="text-muted"><i class="bi bi-person me-1"></i>{{ u.username }}</small>
+            </div>
+            <div>
+                {% if u.role == 'admin' %}
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">Admin</span>
+                {% else %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1">Pemilik Usaha</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2 mb-3 pt-2 border-top">
+            <div class="d-flex justify-content-between align-items-center small">
+                <span class="text-muted fw-semibold">Jumlah Usaha:</span>
+                {% if u.role == 'admin' %}
+                    <span class="text-muted small">-</span>
+                {% else %}
+                    {% set biz_count = u.businesses.count() %}
+                    {% if biz_count == 0 %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1">
+                            <i class="bi bi-exclamation-circle me-1"></i> Belum ada usaha
+                        </span>
+                    {% else %}
+                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill px-2.5 py-1">
+                            <i class="bi bi-shop me-1"></i> {{ biz_count }} Usaha
+                        </span>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="d-flex justify-content-between align-items-center small">
+                <span class="text-muted fw-semibold">Status Password:</span>
+                {% if u.must_change_password %}
+                    <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1">
+                        <i class="bi bi-exclamation-circle me-1"></i> Wajib Ganti Password
+                    </span>
+                {% else %}
+                    <span class="badge bg-secondary-subtle text-secondary border rounded-pill px-2.5 py-1">
+                        <i class="bi bi-check-circle me-1"></i> Aktif
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 pt-2 border-top">
+            <a href="{{ url_for('admin.user_detail', user_id=u.id) }}"
+               class="btn btn-outline-info btn-sm rounded-pill flex-fill py-2 fw-semibold text-center d-flex align-items-center justify-content-center">
+                <i class="bi bi-eye-fill me-1"></i> Detail
+            </a>
+            {% if u.role != 'admin' %}
+                <button type="button"
+                        class="btn btn-outline-warning btn-sm rounded-pill flex-fill py-2 fw-semibold text-center d-flex align-items-center justify-content-center"
+                        data-bs-toggle="modal"
+                        data-bs-target="#confirmResetModal{{ u.id }}">
+                    <i class="bi bi-key-fill me-1"></i> Reset Password
+                </button>
+            {% else %}
+                <span class="btn btn-light btn-sm rounded-pill flex-fill py-2 text-muted fw-semibold text-center disabled border d-flex align-items-center justify-content-center">
+                    <i class="bi bi-shield-lock me-1"></i> Terlindungi
+                </span>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card card-custom border-0 shadow-sm p-4 text-center text-muted">
+        Belum ada akun terdaftar.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal Konfirmasi Reset Password -->
+{% for u in users %}
+{% if u.role != 'admin' %}
+<div class="modal fade" id="confirmResetModal{{ u.id }}" tabindex="-1" aria-labelledby="confirmResetModalLabel{{ u.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="confirmResetModalLabel{{ u.id }}">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Konfirmasi Reset Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-3">
+                <p class="mb-2 fs-6 text-dark">Apakah Anda yakin ingin mereset password akun ini?</p>
+                <div class="bg-light p-3 rounded-3 border">
+                    <div class="small text-muted mb-1">Target Akun Pengguna:</div>
+                    <div class="fw-bold text-dark">{{ u.full_name }}</div>
+                    <small class="text-muted"><i class="bi bi-person me-1"></i>Username: <strong>{{ u.username }}</strong></small>
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    <i class="bi bi-info-circle me-1"></i> Sistem akan secara otomatis mengacak password sementara baru dan mengharuskan pengguna mengganti kata sandi saat login berikutnya.
+                </small>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
+                <form action="{{ url_for('admin.reset_password', user_id=u.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-warning rounded-3 fw-bold">
+                        <i class="bi bi-key-fill me-1"></i> Reset Password
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
 
 <!-- Modal Tambah Akun Pemilik Usaha Baru -->
 <div class="modal fade" id="createAccountModal" tabindex="-1" aria-labelledby="createAccountModalLabel" aria-hidden="true">
