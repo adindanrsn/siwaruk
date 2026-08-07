@@ -211,19 +211,21 @@ def laporan_masuk():
     """
     from app.models.laporan_terkirim import LaporanTerkirim
 
-    # Filter opsional berdasarkan status
     status_filter = request.args.get('status', '')
 
     query = LaporanTerkirim.query.order_by(LaporanTerkirim.submitted_at.desc())
     if status_filter and status_filter != 'semua':
-        query = query.filter(LaporanTerkirim.status == status_filter)
+        if status_filter in ['Sudah Ditinjau', 'Sedang Ditinjau']:
+            query = query.filter(LaporanTerkirim.status.in_(['Sudah Ditinjau', 'Sedang Ditinjau']))
+        else:
+            query = query.filter(LaporanTerkirim.status == status_filter)
 
     laporan_list = query.all()
 
     # Statistik ringkasan
     total_all      = LaporanTerkirim.query.count()
     total_belum    = LaporanTerkirim.query.filter_by(status=LaporanTerkirim.STATUS_BELUM).count()
-    total_ditinjau = LaporanTerkirim.query.filter_by(status=LaporanTerkirim.STATUS_DITINJAU).count()
+    total_ditinjau = LaporanTerkirim.query.filter(LaporanTerkirim.status.in_(['Sudah Ditinjau', 'Sedang Ditinjau'])).count()
     total_revisi   = LaporanTerkirim.query.filter_by(status='Perlu Revisi').count()
 
     return render_template(
@@ -289,8 +291,11 @@ def detail_laporan(laporan_id):
 def buka_pdf_laporan(laporan_id):
     """
     Buka atau unduh file PDF laporan yang tersimpan di instance folder.
+    Jika file pada disk belum ada, lakukan regenerasi PDF secara otomatis.
     """
     import os
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
     from flask import send_from_directory, current_app
     from app.models.laporan_terkirim import LaporanTerkirim
 
@@ -303,9 +308,30 @@ def buka_pdf_laporan(laporan_id):
     clean_rel_path = record.file_path.replace('/', os.sep).replace('\\', os.sep)
     full_path = os.path.join(current_app.instance_path, clean_rel_path)
 
+    # Regenerasi PDF secara dinamis jika file fisik di server hilang/tidak ditemukan
     if not os.path.exists(full_path):
-        flash('File PDF tidak ditemukan di server.', 'danger')
-        return redirect(url_for('admin.laporan_masuk'))
+        try:
+            import io
+            from reportlab.lib.pagesizes import A4
+            from reportlab.platypus import SimpleDocTemplate
+            from app.routes.laporan import _build_pdf_elements, get_report_data
+
+            _WIB = ZoneInfo('Asia/Jakarta')
+            start_wib = datetime.combine(record.start_date, datetime.min.time()).replace(tzinfo=_WIB)
+            end_wib = datetime.combine(record.end_date, datetime.max.time()).replace(tzinfo=_WIB)
+            data = get_report_data(record.business, start_wib, end_wib, record.periode)
+
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            buffer = io.BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=40, bottomMargin=50)
+            elements, on_page_func = _build_pdf_elements(record.business, start_wib, end_wib, record.periode, data)
+            doc.build(elements, onFirstPage=on_page_func, onLaterPages=on_page_func)
+
+            with open(full_path, 'wb') as f:
+                f.write(buffer.getvalue())
+        except Exception as e:
+            flash(f'File PDF tidak ditemukan di server dan gagal dibuat ulang: {str(e)}', 'danger')
+            return redirect(url_for('admin.laporan_masuk'))
 
     directory = os.path.dirname(full_path)
     filename  = os.path.basename(full_path)

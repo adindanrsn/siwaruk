@@ -264,6 +264,18 @@ def index():
         # Remove full objects before returning JSON
         data.pop('sales', None)
         data.pop('expenses', None)
+
+        sent_info = None
+        if current_report_terkirim:
+            from app.utils import to_wib
+            wtime = to_wib(current_report_terkirim.submitted_at)
+            sent_info = {
+                'id': current_report_terkirim.id,
+                'status': current_report_terkirim.status,
+                'submitted_at_formatted': 'Dikirim: ' + wtime.strftime('%d %b %Y, %H:%M') + ' WIB',
+                'periode_label': current_report_terkirim.periode_label
+            }
+
         return jsonify({
             'status': 'success',
             'periode': periode,
@@ -271,7 +283,8 @@ def index():
             'end_date': end_wib.strftime('%Y-%m-%d'),
             'formatted_periode': formatted_periode,
             'data': data,
-            'sent_status': current_report_terkirim.status if current_report_terkirim else None
+            'is_sent': True if current_report_terkirim else False,
+            'sent_info': sent_info
         })
 
     return render_template(
@@ -691,6 +704,19 @@ def kirim_ke_admin():
 
     start_wib, end_wib, periode = get_date_range(periode, start_str, end_str)
     formatted = format_periode_id(start_wib, end_wib, periode)
+
+    # ── Guard: Cegah pengiriman ganda untuk periode yang sama ─────
+    existing = LaporanTerkirim.query.filter_by(
+        business_id=active_biz.id,
+        start_date=start_wib.date(),
+        end_date=end_wib.date()
+    ).first()
+    if existing:
+        return jsonify({
+            'status': 'error',
+            'message': '❌ Laporan untuk periode ini sudah pernah dikirim ke Admin.'
+        }), 400
+
     data = get_report_data(active_biz, start_wib, end_wib, periode)
 
     # ── 1. Build PDF ke BytesIO ──────────────────────────────
@@ -716,6 +742,9 @@ def kirim_ke_admin():
         f.write(buffer.getvalue())
 
     # ── 3. Simpan record ke database ─────────────────────────
+    from datetime import timezone
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
     record = LaporanTerkirim(
         business_id   = active_biz.id,
         sender_id     = current_user.id,
@@ -723,8 +752,8 @@ def kirim_ke_admin():
         periode_label = formatted,
         start_date    = start_wib.date(),
         end_date      = end_wib.date(),
-        submitted_at  = now_wib.astimezone(__import__('datetime').timezone.utc).replace(tzinfo=None),
-        file_path     = os.path.join('laporan_terkirim', filename),
+        submitted_at  = now_utc,
+        file_path     = f"laporan_terkirim/{filename}",
         status        = LaporanTerkirim.STATUS_BELUM,
     )
     db.session.add(record)
@@ -755,7 +784,7 @@ def kirim_ke_admin():
 
     return jsonify({
         'status': 'success',
-        'message': 'Laporan berhasil dikirim ke Admin.',
+        'message': '✅ Laporan berhasil dikirim ke Admin.',
         'id': record.id,
         'periode_label': formatted,
         'business_name': active_biz.business_name,
