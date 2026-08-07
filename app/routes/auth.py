@@ -152,31 +152,11 @@ def profil():
             user_fullname = target_user.full_name
 
             try:
-                import os
-                from flask import current_app
-                from app.models.laporan_terkirim import LaporanTerkirim
-
-                # 1. Hapus file PDF & record laporan terkirim milik usaha pengguna jika ada
-                user_biz_ids = [b.id for b in target_user.businesses]
-                if user_biz_ids:
-                    reports = LaporanTerkirim.query.filter(LaporanTerkirim.business_id.in_(user_biz_ids)).all()
-                    for rep in reports:
-                        if rep.file_path:
-                            clean_rel = rep.file_path.replace('/', os.sep).replace('\\', os.sep)
-                            full_path = os.path.join(current_app.instance_path, clean_rel)
-                            if os.path.exists(full_path):
-                                try:
-                                    os.remove(full_path)
-                                except Exception:
-                                    pass
-                        db.session.delete(rep)
-                    db.session.flush()
-
-                # 2. Hapus user secara atomik (cascade delete menghapus businesses, products, sales, dll.)
+                # Hapus user secara atomik (cascade delete menghapus businesses, products, sales, dll.)
                 db.session.delete(target_user)
                 db.session.commit()
 
-                # 3. Logout dan redirect ke login
+                # Logout dan redirect ke login
                 logout_user()
                 flash(f'Akun "{user_fullname}" beserta seluruh data terkait telah berhasil dihapus.', 'success')
                 return redirect(url_for('auth.login'))

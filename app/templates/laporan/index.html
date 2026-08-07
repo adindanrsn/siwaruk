@@ -89,72 +89,23 @@
            class="btn btn-outline-success btn-sm rounded-pill fw-semibold px-3">
             <i class="bi bi-file-earmark-excel-fill"></i> Unduh Excel
         </a>
-        {% if current_report_terkirim %}
-        <button type="button"
-                id="btnKirimAdmin"
-                class="btn btn-success btn-sm rounded-pill fw-semibold px-3 disabled"
-                disabled
-                title="Laporan periode ini telah dikirim ke Admin">
-            ✅ Sudah Dikirim
-        </button>
-        {% else %}
-        <button type="button"
-                id="btnKirimAdmin"
-                class="btn btn-outline-primary btn-sm rounded-pill fw-semibold px-3"
-                data-bs-toggle="modal"
-                data-bs-target="#modalKirimAdmin"
-                title="Kirim laporan ke Admin">
-            <i class="bi bi-send-fill me-1"></i> Kirim ke Admin
-        </button>
-        {% endif %}
     </div>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-12 col-xl-4">
-        <div class="card-custom h-100 p-3 d-flex flex-column justify-content-between">
-            <div>
-                <div class="small fw-bold text-secondary mb-3">Periode Aktif</div>
-                <div class="d-inline-flex align-items-center gap-2 bg-light p-2 px-3 rounded-3 border w-100">
-                    <i class="bi bi-calendar3 text-primary"></i>
-                    <span class="fw-bold small" id="activePeriodBadge">{{ formatted_periode }}</span>
-                    <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-3 ms-auto" id="activePeriodTag">
-                        {% if periode == 'hari_ini' %}Hari Ini
-                        {% elif periode == 'minggu_ini' %}Minggu Ini
-                        {% elif periode == 'bulan_ini' %}Bulan Ini
-                        {% elif periode == 'tahun_ini' %}Tahun Ini
-                        {% else %}Custom{% endif %}
-                    </span>
-                </div>
-            </div>
-
-            {# Status Pengiriman Laporan #}
-            <div id="kirimStatusBanner" class="mt-3 pt-2 border-top {% if not current_report_terkirim %}d-none{% endif %}">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <small class="text-muted fw-semibold">Status Laporan Admin:</small>
-                    <span id="kirimStatusBadge">
-                        {% if current_report_terkirim %}
-                            {% if current_report_terkirim.status == 'Belum Ditinjau' %}
-                                <span class="badge badge-laporan-belum rounded-pill px-2.5 py-1 fw-semibold">🟡 Belum Ditinjau</span>
-                            {% elif current_report_terkirim.status in ['Sudah Ditinjau', 'Sedang Ditinjau'] %}
-                                <span class="badge badge-laporan-ditinjau rounded-pill px-2.5 py-1 fw-semibold">🔵 Sudah Ditinjau</span>
-                            {% elif current_report_terkirim.status == 'Perlu Revisi' %}
-                                <span class="badge badge-laporan-revisi rounded-pill px-2.5 py-1 fw-semibold">🔴 Perlu Revisi</span>
-                            {% else %}
-                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1">{{ current_report_terkirim.status }}</span>
-                            {% endif %}
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="small text-muted">
-                    <i class="bi bi-clock-history me-1"></i>
-                    <span id="kirimTanggalPengiriman">
-                        {% if current_report_terkirim %}
-                            {% set wtime = current_report_terkirim.submitted_at | to_wib %}
-                            Dikirim: {{ wtime.strftime('%d %b %Y, %H:%M') }} WIB
-                        {% endif %}
-                    </span>
-                </div>
+        <div class="card-custom h-100 p-3">
+            <div class="small fw-bold text-secondary mb-3">Periode Aktif</div>
+            <div class="d-inline-flex align-items-center gap-2 bg-light p-2 px-3 rounded-3 border w-100">
+                <i class="bi bi-calendar3 text-primary"></i>
+                <span class="fw-bold small" id="activePeriodBadge">{{ formatted_periode }}</span>
+                <span class="badge bg-success bg-opacity-25 text-success rounded-pill px-3 ms-auto" id="activePeriodTag">
+                    {% if periode == 'hari_ini' %}Hari Ini
+                    {% elif periode == 'minggu_ini' %}Minggu Ini
+                    {% elif periode == 'bulan_ini' %}Bulan Ini
+                    {% elif periode == 'tahun_ini' %}Tahun Ini
+                    {% else %}Custom{% endif %}
+                </span>
             </div>
         </div>
     </div>
@@ -316,156 +267,11 @@
     </div>
 </div>
 
-{% if riwayat_laporan_terkirim %}
-<div class="card card-custom border-0 shadow-sm mt-4">
-    <div class="card-header bg-white border-bottom pt-4 pb-3">
-        <h6 class="fw-bold mb-0">
-            <i class="bi bi-clock-history text-primary me-2"></i>Status Laporan yang Dikirim ke Admin
-        </h6>
-    </div>
-    <div class="table-responsive">
-        <table class="table align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="ps-4">#</th>
-                    <th>Periode Laporan</th>
-                    <th>Tanggal Pengiriman</th>
-                    <th class="text-end pe-4">Status Tinjauan Admin</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in riwayat_laporan_terkirim %}
-                <tr>
-                    <td class="ps-4 fw-semibold text-muted">{{ loop.index }}</td>
-                    <td class="fw-bold text-dark">{{ r.periode_label }}</td>
-                    <td class="text-muted small">
-                        {% set wtime = r.submitted_at | to_wib %}
-                        {{ wtime.strftime('%d %b %Y, %H:%M') }} WIB
-                    </td>
-                    <td class="text-end pe-4">
-                        {% if r.status == 'Belum Ditinjau' %}
-                            <span class="badge badge-laporan-belum rounded-pill px-3 py-1 fw-semibold">
-                                🟡 Belum Ditinjau
-                            </span>
-                        {% elif r.status == 'Sudah Ditinjau' or r.status == 'Sedang Ditinjau' %}
-                            <span class="badge badge-laporan-ditinjau rounded-pill px-3 py-1 fw-semibold">
-                                🔵 Sudah Ditinjau
-                            </span>
-                        {% elif r.status == 'Perlu Revisi' %}
-                            <span class="badge badge-laporan-revisi rounded-pill px-3 py-1 fw-semibold">
-                                🔴 Perlu Revisi
-                            </span>
-                        {% else %}
-                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3 py-1">
-                                {{ r.status }}
-                            </span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
-
 <div class="text-muted small mt-4 text-center">
     <i class="bi bi-info-circle me-1"></i> Data laporan mengikuti zona waktu Asia/Jakarta (WIB) dan diperbarui saat ini.
 </div>
 
-
 {% endblock %}
-
-{# ══════════════════════════════════════
-   MODAL — Konfirmasi Kirim ke Admin
-══════════════════════════════════════ #}
-<div class="modal fade" id="modalKirimAdmin" tabindex="-1"
-     aria-labelledby="modalKirimAdminLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow">
-
-            {# ── Confirm View ── #}
-            <div id="kirimConfirmView">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="modalKirimAdminLabel">
-                        <i class="bi bi-send-fill text-primary me-2"></i>Kirim Laporan ke Admin
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                </div>
-                <div class="modal-body py-3">
-                    <div class="alert alert-info py-2 px-3 small d-flex align-items-start gap-2 rounded-3 mb-3">
-                        <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
-                        <div>
-                            Laporan untuk periode <strong id="kirimPeriodeLabel">{{ formatted_periode }}</strong>
-                            akan dikirimkan ke Admin dalam format PDF.
-                        </div>
-                    </div>
-                    <p class="text-muted small mb-0">
-                        <i class="bi bi-check-circle me-1 text-success"></i>
-                        Admin akan menerima notifikasi dan dapat meninjau laporan Anda.
-                    </p>
-                </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary rounded-3 fw-bold" id="btnKonfirmasiKirim">
-                        <span id="kirimSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
-                        <i class="bi bi-send-fill me-1" id="kirimIcon"></i>
-                        Kirim Sekarang
-                    </button>
-                </div>
-            </div>
-
-            {# ── Success View (with WhatsApp Button) ── #}
-            <div id="kirimSuccessView" class="d-none">
-                <div class="modal-header border-bottom-0 pb-0 justify-content-end">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                </div>
-                <div class="modal-body px-4 pb-4 pt-0 text-center">
-                    <div class="mb-3 text-success">
-                        <i class="bi bi-check-circle-fill display-3"></i>
-                    </div>
-                    <h5 class="fw-bold mb-2">Laporan Berhasil Dikirim!</h5>
-                    <p class="text-muted small mb-4">
-                        Laporan usaha <strong id="successBizName"></strong> untuk periode <strong id="successPeriodeLabel"></strong> telah resmi tersimpan di database Siwaruk.
-                    </p>
-                    <a id="btnWaAdmin" href="#" target="_blank" class="btn btn-success btn-lg w-100 rounded-3 fw-bold py-2.5 px-3 mb-2 shadow-sm">
-                        <i class="bi bi-whatsapp me-2"></i>Hubungi Admin via WhatsApp
-                    </a>
-                    <button type="button" class="btn btn-light w-100 rounded-3 text-muted small" data-bs-dismiss="modal">
-                        Tutup
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-{# ══════════════════════════════════════
-   TOAST — Notifikasi Sukses
-══════════════════════════════════════ #}
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
-    <div id="toastKirimBerhasil" class="toast align-items-center border-0 text-white bg-success"
-         role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body fw-semibold">
-                <span id="toastKirimMsg">✅ Laporan berhasil dikirim ke Admin.</span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                    data-bs-dismiss="toast" aria-label="Tutup"></button>
-        </div>
-    </div>
-    <div id="toastKirimGagal" class="toast align-items-center border-0 text-white bg-danger"
-         role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body fw-semibold">
-                <span id="toastGagalMsg">❌ Gagal mengirim laporan. Silakan coba lagi.</span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                    data-bs-dismiss="toast" aria-label="Tutup"></button>
-        </div>
-    </div>
-</div>
 
 {% block extra_js %}
 
@@ -643,51 +449,6 @@
                     }
                     if (headerDate) headerDate.textContent = res.formatted_periode;
 
-                    // Update Button and Status Banner for Kirim ke Admin
-                    const btnKirim = document.getElementById('btnKirimAdmin');
-                    const statusBanner = document.getElementById('kirimStatusBanner');
-                    const statusBadge = document.getElementById('kirimStatusBadge');
-                    const tanggalPengiriman = document.getElementById('kirimTanggalPengiriman');
-
-                    if (res.is_sent && res.sent_info) {
-                        if (btnKirim) {
-                            btnKirim.className = 'btn btn-success btn-sm rounded-pill fw-semibold px-3 disabled';
-                            btnKirim.disabled = true;
-                            btnKirim.removeAttribute('data-bs-toggle');
-                            btnKirim.removeAttribute('data-bs-target');
-                            btnKirim.innerHTML = '✅ Sudah Dikirim';
-                            btnKirim.title = 'Laporan periode ini telah dikirim ke Admin';
-                        }
-                        if (statusBanner) {
-                            statusBanner.classList.remove('d-none');
-                            let badgeHtml = '';
-                            const st = res.sent_info.status;
-                            if (st === 'Belum Ditinjau') {
-                                badgeHtml = '<span class="badge badge-laporan-belum rounded-pill px-2.5 py-1 fw-semibold">🟡 Belum Ditinjau</span>';
-                            } else if (st === 'Sudah Ditinjau' || st === 'Sedang Ditinjau') {
-                                badgeHtml = '<span class="badge badge-laporan-ditinjau rounded-pill px-2.5 py-1 fw-semibold">🔵 Sudah Ditinjau</span>';
-                            } else if (st === 'Perlu Revisi') {
-                                badgeHtml = '<span class="badge badge-laporan-revisi rounded-pill px-2.5 py-1 fw-semibold">🔴 Perlu Revisi</span>';
-                            } else {
-                                badgeHtml = `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1">${st}</span>`;
-                            }
-                            if (statusBadge) statusBadge.innerHTML = badgeHtml;
-                            if (tanggalPengiriman) tanggalPengiriman.textContent = res.sent_info.submitted_at_formatted;
-                        }
-                    } else {
-                        if (btnKirim) {
-                            btnKirim.className = 'btn btn-outline-primary btn-sm rounded-pill fw-semibold px-3';
-                            btnKirim.disabled = false;
-                            btnKirim.setAttribute('data-bs-toggle', 'modal');
-                            btnKirim.setAttribute('data-bs-target', '#modalKirimAdmin');
-                            btnKirim.innerHTML = '<i class="bi bi-send-fill me-1"></i> Kirim ke Admin';
-                            btnKirim.title = 'Kirim laporan ke Admin';
-                        }
-                        if (statusBanner) {
-                            statusBanner.classList.add('d-none');
-                        }
-                    }
-
                     const fmt = (num) => 'Rp' + num.toLocaleString('id-ID').replace(/,/g, '.');
                     document.getElementById('valPemasukan').textContent = fmt(res.data.total_pemasukan);
                     document.getElementById('valPengeluaran').textContent = fmt(res.data.total_pengeluaran);
@@ -752,128 +513,6 @@
             .catch(err => console.error("Error fetching report data:", err));
         });
     });
-</script>
-
-<script>
-    /* ── Kirim ke Admin — AJAX Handler ── */
-    (function () {
-        const btnKonfirmasi   = document.getElementById('btnKonfirmasiKirim');
-        const spinner         = document.getElementById('kirimSpinner');
-        const kirimIcon       = document.getElementById('kirimIcon');
-        const kirimLabel      = document.getElementById('kirimPeriodeLabel');
-        const toastOk         = document.getElementById('toastKirimBerhasil');
-        const toastErr        = document.getElementById('toastKirimGagal');
-        const toastMsg        = document.getElementById('toastKirimMsg');
-        const toastErrMsg     = document.getElementById('toastGagalMsg');
-
-        const modalEl         = document.getElementById('modalKirimAdmin');
-        const confirmView     = document.getElementById('kirimConfirmView');
-        const successView     = document.getElementById('kirimSuccessView');
-        const successBizName  = document.getElementById('successBizName');
-        const successPeriode  = document.getElementById('successPeriodeLabel');
-        const btnWaAdmin      = document.getElementById('btnWaAdmin');
-
-        /* Update label periode di dalam modal setiap kali periode aktif berubah */
-        function updateKirimLabel() {
-            const badge = document.getElementById('activePeriodBadge');
-            if (badge && kirimLabel) {
-                kirimLabel.textContent = badge.textContent.trim();
-            }
-        }
-
-        /* Sync saat halaman pertama dimuat */
-        document.addEventListener('DOMContentLoaded', updateKirimLabel);
-
-        /* Sync setelah AJAX filter chart selesai — dipanggil dari handler filterForm */
-        document.addEventListener('laporan:periodeUpdated', updateKirimLabel);
-
-        let reportSentSuccess = false;
-
-        /* Reset modal ke tampilan konfirmasi ketika modal ditutup */
-        if (modalEl) {
-            modalEl.addEventListener('hidden.bs.modal', function () {
-                if (confirmView && successView) {
-                    confirmView.classList.remove('d-none');
-                    successView.classList.add('d-none');
-                }
-                if (reportSentSuccess) {
-                    window.location.reload();
-                }
-            });
-        }
-
-        if (!btnKonfirmasi) return;
-
-        btnKonfirmasi.addEventListener('click', function () {
-            /* Ambil periode & tanggal dari filterForm */
-            const form       = document.getElementById('filterForm');
-            const periode    = document.getElementById('hiddenPeriode')
-                               ? document.getElementById('hiddenPeriode').value
-                               : 'bulan_ini';
-            const startDate  = form ? form.querySelector('[name="start_date"]')?.value || '' : '';
-            const endDate    = form ? form.querySelector('[name="end_date"]')?.value   || '' : '';
-
-            /* Loading state */
-            btnKonfirmasi.disabled = true;
-            spinner.classList.remove('d-none');
-            kirimIcon.classList.add('d-none');
-
-            const body = new FormData();
-            body.append('periode',    periode);
-            body.append('start_date', startDate);
-            body.append('end_date',   endDate);
-
-            /* CSRF token dari meta tag (Flask-WTF) jika ada */
-            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
-            const headers  = {};
-            if (csrfMeta) headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
-
-            fetch("{{ url_for('laporan.kirim_ke_admin') }}", {
-                method: 'POST',
-                headers: headers,
-                body: body,
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    reportSentSuccess = true;
-                    /* Tampilkan tampilan sukses dengan tombol WhatsApp di dalam modal */
-                    if (successBizName) successBizName.textContent = data.business_name || '';
-                    if (successPeriode) successPeriode.textContent = data.periode_label || '';
-                    if (btnWaAdmin && data.wa_url) btnWaAdmin.href = data.wa_url;
-
-                    if (confirmView && successView) {
-                        confirmView.classList.add('d-none');
-                        successView.classList.remove('d-none');
-                    }
-
-                    toastMsg.textContent = data.message || '✅ Laporan berhasil dikirim ke Admin.';
-                    new bootstrap.Toast(toastOk, { delay: 5000 }).show();
-                } else {
-                    /* Jika gagal, tutup modal dan tampilkan toast error */
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-
-                    const errMsg = data.message || 'Gagal mengirim laporan. Silakan coba lagi.';
-                    toastErrMsg.textContent = errMsg.startsWith('❌') ? errMsg : ('❌ ' + errMsg);
-                    new bootstrap.Toast(toastErr, { delay: 5000 }).show();
-                }
-            })
-            .catch(() => {
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                if (modal) modal.hide();
-
-                toastErrMsg.textContent = '❌ Gagal terhubung ke server. Silakan periksa koneksi internet Anda.';
-                new bootstrap.Toast(toastErr, { delay: 5000 }).show();
-            })
-            .finally(() => {
-                /* Reset loading state */
-                btnKonfirmasi.disabled = false;
-                spinner.classList.add('d-none');
-                kirimIcon.classList.remove('d-none');
-            });
-        });
-    })();
 </script>
 {% endblock %}
 

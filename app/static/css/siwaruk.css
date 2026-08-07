@@ -862,31 +862,6 @@ small, .small, .text-muted, caption {
 }
 
 /* ===================================================================
-   21. LAPORAN STATUS BADGES — Standardized Report Status Styling
-   🟡 Belum Ditinjau (Yellow)
-   🔵 Sudah Ditinjau (Blue)
-   🔴 Perlu Revisi (Red)
-   =================================================================== */
-
-.badge-laporan-belum {
-    background-color: #FEF3C7 !important;
-    color: #92400E !important;
-    border: 1px solid #FCD34D !important;
-}
-
-.badge-laporan-ditinjau {
-    background-color: #DBEAFE !important;
-    color: #1E40AF !important;
-    border: 1px solid #93C5FD !important;
-}
-
-.badge-laporan-revisi {
-    background-color: #FEE2E2 !important;
-    color: #991B1B !important;
-    border: 1px solid #FCA5A5 !important;
-}
-
-/* ===================================================================
    22. FLOATING WHATSAPP BUTTON — Global Admin Consultation Widget
    =================================================================== */
 

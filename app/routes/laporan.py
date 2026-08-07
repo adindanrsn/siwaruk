@@ -249,32 +249,10 @@ def index():
     formatted_periode = format_periode_id(start_wib, end_wib, periode)
     data = get_report_data(active_biz, start_wib, end_wib, periode)
 
-    from app.models.laporan_terkirim import LaporanTerkirim
-    current_report_terkirim = LaporanTerkirim.query.filter_by(
-        business_id=active_biz.id,
-        start_date=start_wib.date(),
-        end_date=end_wib.date()
-    ).order_by(LaporanTerkirim.submitted_at.desc()).first()
-
-    riwayat_laporan_terkirim = LaporanTerkirim.query.filter_by(
-        business_id=active_biz.id
-    ).order_by(LaporanTerkirim.submitted_at.desc()).limit(10).all()
-
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         # Remove full objects before returning JSON
         data.pop('sales', None)
         data.pop('expenses', None)
-
-        sent_info = None
-        if current_report_terkirim:
-            from app.utils import to_wib
-            wtime = to_wib(current_report_terkirim.submitted_at)
-            sent_info = {
-                'id': current_report_terkirim.id,
-                'status': current_report_terkirim.status,
-                'submitted_at_formatted': 'Dikirim: ' + wtime.strftime('%d %b %Y, %H:%M') + ' WIB',
-                'periode_label': current_report_terkirim.periode_label
-            }
 
         return jsonify({
             'status': 'success',
@@ -282,9 +260,7 @@ def index():
             'start_date': start_wib.strftime('%Y-%m-%d'),
             'end_date': end_wib.strftime('%Y-%m-%d'),
             'formatted_periode': formatted_periode,
-            'data': data,
-            'is_sent': True if current_report_terkirim else False,
-            'sent_info': sent_info
+            'data': data
         })
 
     return render_template(
@@ -294,9 +270,7 @@ def index():
         start_date=start_wib.strftime('%Y-%m-%d'),
         end_date=end_wib.strftime('%Y-%m-%d'),
         formatted_periode=formatted_periode,
-        data=data,
-        current_report_terkirim=current_report_terkirim,
-        riwayat_laporan_terkirim=riwayat_laporan_terkirim
+        data=data
     )
 
 def _generate_daily_rekap(start_wib, end_wib, data):
@@ -679,115 +653,4 @@ def _build_pdf_elements(active_biz, start_wib, end_wib, periode, data):
 
     on_page_func = _create_header_footer_watermark(start_wib, end_wib, active_biz)
     return elements, on_page_func
-
-
-# ─────────────────────────────────────────────────────────────
-#  ROUTE: Kirim ke Admin
-# ─────────────────────────────────────────────────────────────
-@laporan_bp.route('/kirim-ke-admin', methods=['POST'])
-@login_required
-def kirim_ke_admin():
-    """
-    Generate PDF laporan yang sama dengan export_pdf,
-    simpan ke disk, dan catat pengiriman di tabel laporan_terkirim.
-    Mengembalikan JSON untuk diproses AJAX di frontend.
-    """
-    from app.models.laporan_terkirim import LaporanTerkirim
-
-    active_biz, err = _check_owner_and_active_biz()
-    if err:
-        return jsonify({'status': 'error', 'message': 'Usaha tidak ditemukan.'}), 400
-
-    periode  = request.form.get('periode', 'bulan_ini')
-    start_str = request.form.get('start_date')
-    end_str   = request.form.get('end_date')
-
-    start_wib, end_wib, periode = get_date_range(periode, start_str, end_str)
-    formatted = format_periode_id(start_wib, end_wib, periode)
-
-    # ── Guard: Cegah pengiriman ganda untuk periode yang sama ─────
-    existing = LaporanTerkirim.query.filter_by(
-        business_id=active_biz.id,
-        start_date=start_wib.date(),
-        end_date=end_wib.date()
-    ).first()
-    if existing:
-        return jsonify({
-            'status': 'error',
-            'message': '❌ Laporan untuk periode ini sudah pernah dikirim ke Admin.'
-        }), 400
-
-    data = get_report_data(active_biz, start_wib, end_wib, periode)
-
-    # ── 1. Build PDF ke BytesIO ──────────────────────────────
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4,
-                            rightMargin=30, leftMargin=30,
-                            topMargin=40, bottomMargin=50)
-    elements, on_page_func = _build_pdf_elements(active_biz, start_wib, end_wib, periode, data)
-    doc.build(elements, onFirstPage=on_page_func, onLaterPages=on_page_func)
-
-    # ── 2. Simpan PDF ke INSTANCE_PATH/laporan_terkirim/ ─────
-    save_dir = os.path.join(current_app.instance_path, 'laporan_terkirim')
-    os.makedirs(save_dir, exist_ok=True)
-
-    now_wib = datetime.now(_WIB)
-    filename = (
-        f"Laporan_{active_biz.id}_{now_wib.strftime('%Y%m%d_%H%M%S')}"
-        f"_{start_wib.strftime('%Y%m%d')}_{end_wib.strftime('%Y%m%d')}.pdf"
-    )
-    file_path = os.path.join(save_dir, filename)
-
-    with open(file_path, 'wb') as f:
-        f.write(buffer.getvalue())
-
-    # ── 3. Simpan record ke database ─────────────────────────
-    from datetime import timezone
-    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    record = LaporanTerkirim(
-        business_id   = active_biz.id,
-        sender_id     = current_user.id,
-        periode       = periode,
-        periode_label = formatted,
-        start_date    = start_wib.date(),
-        end_date      = end_wib.date(),
-        submitted_at  = now_utc,
-        file_path     = f"laporan_terkirim/{filename}",
-        status        = LaporanTerkirim.STATUS_BELUM,
-    )
-    db.session.add(record)
-    db.session.commit()
-
-    # ── 4. Buat WhatsApp Link untuk konfirmasi ───────────────
-    from app.models.user import User
-    from app.utils import normalize_whatsapp_number
-    from urllib.parse import quote
-
-    admin_user = User.query.filter_by(role='admin').first()
-    admin_phone = normalize_whatsapp_number(admin_user.phone) if (admin_user and admin_user.phone) else ''
-
-    message_text = (
-        f"Halo Admin.\n\n"
-        f"Saya telah mengirim laporan usaha melalui aplikasi Siwaruk.\n\n"
-        f"Nama usaha:\n{active_biz.business_name}\n\n"
-        f"Periode:\n{formatted}\n\n"
-        f"Mohon untuk ditinjau.\n\n"
-        f"Terima kasih."
-    )
-    encoded_text = quote(message_text)
-
-    if admin_phone:
-        wa_url = f"https://wa.me/{admin_phone}?text={encoded_text}"
-    else:
-        wa_url = f"https://wa.me/?text={encoded_text}"
-
-    return jsonify({
-        'status': 'success',
-        'message': '✅ Laporan berhasil dikirim ke Admin.',
-        'id': record.id,
-        'periode_label': formatted,
-        'business_name': active_biz.business_name,
-        'wa_url': wa_url
-    })
 

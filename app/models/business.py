@@ -89,11 +89,6 @@ class Business(BaseModel):
         back_populates='business',
         cascade='all, delete-orphan'
     )
-    laporan_terkirim = db.relationship(
-        'LaporanTerkirim',
-        back_populates='business',
-        cascade='all, delete-orphan'
-    )
 
     def __repr__(self):
         return f'<Business {self.business_name}>'
